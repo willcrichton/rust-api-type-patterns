@@ -1,0 +1,305 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Rust API Type Patterns</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Rust API Type Patterns</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#rust-api-type-patterns" id="rust-api-type-patterns">Rust API Type Patterns</a></h1>
+<p>This book is for people who are writing APIs in Rust. In particular, APIs that involve complex abstractions: variadics, state machines, extensible architectures, and so on.</p>
+<p><strong>The central theme is how to enforce API invariants by replacing dynamically-typed abstractions with statically-typed ones.</strong></p>
+<h2><a class="header" href="#a-prototypical-example-enums-over-strings" id="a-prototypical-example-enums-over-strings">A prototypical example: enums over strings</a></h2>
+<p>A basic example of this theme is using enums to represent a finite set of options, rather than a string. Imagine trying to convert a description of a color to an RGB tuple. This API design is error-prone:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn color_to_rgb_bad(color: &amp;str) -&gt; Option&lt;(u8, u8, u8)&gt; {
+  match color {
+    &quot;Red&quot; =&gt; Some((255, 0, 0)),
+    &quot;Green&quot; =&gt; Some((0, 255, 0)),
+    &quot;Blue&quot; =&gt; Some((0, 0, 255)),
+    _ =&gt; None
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>While this design avoids errors:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>enum PrimaryColor { Red, Green, Blue }
+fn color_to_rgb_good(color: PrimaryColor) -&gt; (u8, u8, u8) {
+  match color {
+    PrimaryColor::Red =&gt; (255, 0, 0),
+    PrimaryColor::Green =&gt; (0, 255, 0),
+    PrimaryColor::Blue =&gt; (0, 0, 255)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Specifically, errors could happen either for a API client or the API author:</p>
+<ul>
+<li><strong>For a API client,</strong> the <code>color</code> parameter in the first example is an dynamically-typed (or &quot;stringly-typed&quot;) abstraction because the compiler cannot verify whether a call to <code>color_to_rgb_bad</code> will always contain one of the three strings. By contrast, in <code>color_to_rgb_good</code>, the input is guaranteed to be one of the enum values. Consequently, the <code>Option</code> is removed from the type signature because the method can no longer fail.</li>
+<li><strong>For the API author,</strong> the compiler does not enforce that the implementation of <code>color_to_rgb_bad</code> matches on the strings intended by the author. If they wrote <code>&quot;Rod&quot;</code> instead of <code>&quot;Red&quot;</code>, the error would only arise in a unit test or client bug report. By contrast, the compiler enforces that each enum variants must be one of the three enum values.</li>
+</ul>
+<h2><a class="header" href="#book-structure" id="book-structure">Book structure</a></h2>
+<p>The remainder of the book is structured much like the example above. Each chapter follows the pattern:</p>
+<ol>
+<li>Describe the concepts and constraints of a system in a particular application domain.</li>
+<li>Show the dynamically-typed and statically-typed implementations of an API for the system.</li>
+<li>Analyze what errors can happen in each flavor of API.</li>
+</ol>
+<p>You can consume this book à la carte, reading individual chapters as they're useful to you. But I have done my best to build a narrative thread between chapters. The content is ordered roughly from least to most complex. <strong>TODO: explain the thread.</strong></p>
+<h1><a class="header" href="#the-main-idea" id="the-main-idea">The Main Idea</a></h1>
+<p>An API is a computational representation of real-world concepts, and <strong>a good API has a small distance between the representation and the concept</strong>. This begs the question: what defines such a distance?</p>
+<h2><a class="header" href="#principles-of-representation" id="principles-of-representation">Principles of representation</a></h2>
+<p>Consider the example from the last chapter. We want to define a data type that represents the three primary colors. We could do this as either a string or an enum:</p>
+<pre><code class="language-rust ignore">fn color_to_rgb_bad(color: &amp;str) // ...
+
+enum PrimaryColor { Red, Green, Blue }
+fn color_to_rgb_good(color: PrimaryColor) // ..
+</code></pre>
+<p>Here, an enum is preferable to a string because <strong>there is a one-to-one map from elements of the representation to elements of the concept</strong>. By contrast, the type <code>&amp;str</code> includes many more strings than primary colors. Because <code>&amp;str</code> is not one-to-one, the <code>color_to_rgb_bad</code> function must handle the additional case of elements in the representation that don't exist in the concept.</p>
+<p>Previously, we justified the enum design in terms of potential errors avoided. But the point is that these errors are symptoms of a deeper issue: cardinality mismatch. And when we explicitly articulate this principle, then we can more easily apply it to new situations.</p>
+<p>For example, cardinality mismatch can happen in multiple ways: consider a situation where an API's representation might contain <em>fewer</em> elements than those in the concept. Consider a variant of Rust's <a href="https://doc.rust-lang.org/std/fs/fn.read_to_string.html"><code>fs::read_to_string</code></a> function which returns a <code>bool</code> instead of <code>Result&lt;String, io::Error&gt;</code>.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use std::{io::Read, path::PathBuf, fs::File};
+fn read_to_string(path: String, buffer: &amp;mut String) -&gt; bool {
+  let mut file = if let Ok(f) = File::open(PathBuf::from(path)) {
+    f
+  } else {
+    return false;
+  };
+
+  if !file.read_to_string(buffer).is_ok() {
+    return false;
+  }
+
+  return true;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>In this API design, the <code>bool</code> represents the concept of success or failure. However, I/O can fail for a number reason, e.g. if the file is not found or the user does not have read permission. The <code>Result</code> representation has a one-to-one mapping because <code>io::Error</code> has a separate value for each I/O error, while the <code>false</code> value must represent every I/O error.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
