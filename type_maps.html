@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Main Idea - Rust API Type Patterns</title>
+        <title>Type Maps - Rust API Type Patterns</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html" class="active"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">3.</strong> State Machines</a></li><li class="chapter-item expanded "><a href="variadics.html"><strong aria-hidden="true">4.</strong> Variadics</a></li><li class="chapter-item expanded "><a href="type_maps.html"><strong aria-hidden="true">5.</strong> Type Maps</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">3.</strong> State Machines</a></li><li class="chapter-item expanded "><a href="variadics.html"><strong aria-hidden="true">4.</strong> Variadics</a></li><li class="chapter-item expanded "><a href="type_maps.html" class="active"><strong aria-hidden="true">5.</strong> Type Maps</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,91 +163,18 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#the-main-idea" id="the-main-idea">The Main Idea</a></h1>
-<p>An API is a computational representation of real-world concepts, and <strong>a good API has a small distance between the representation and the concept</strong>. This begs the question: what defines such a distance?</p>
-<h2><a class="header" href="#principles-of-representation-cardinality-mismatch" id="principles-of-representation-cardinality-mismatch">Principles of representation: cardinality mismatch</a></h2>
-<p>Consider the example from the last chapter. We want to define a data type that represents the three primary colors. We could do this as either a string or an enum:</p>
-<pre><code class="language-rust ignore">fn color_to_rgb_bad(color: &amp;str) // ...
-
-enum PrimaryColor { Red, Green, Blue }
-fn color_to_rgb_good(color: PrimaryColor) // ..
-</code></pre>
-<p>Here, an enum is preferable to a string because <strong>there is a one-to-one map from elements of the representation to elements of the concept</strong>. By contrast, the type <code>&amp;str</code> includes many more strings than primary colors. Because <code>&amp;str</code> is not one-to-one, the <code>color_to_rgb_bad</code> function must handle the additional case of elements in the representation that don't exist in the concept.</p>
-<p>Previously, we justified the enum design in terms of potential errors avoided. But the point is that these errors are symptoms of a deeper issue: cardinality mismatch. And when we explicitly articulate this principle, then we can more easily apply it to new situations.</p>
-<p>For example, cardinality mismatch can happen in multiple ways: consider a situation where an API's representation might contain <em>fewer</em> elements than those in the concept. Consider a variant of Rust's <a href="https://doc.rust-lang.org/std/fs/fn.read_to_string.html"><code>fs::read_to_string</code></a> function which returns a <code>bool</code> instead of <code>Result&lt;String, io::Error&gt;</code>.</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use std::{io::Read, path::PathBuf, fs::File};
-fn read_to_string(path: String, buffer: &amp;mut String) -&gt; bool {
-  let mut file = if let Ok(f) = File::open(PathBuf::from(path)) {
-    f
-  } else {
-    return false;
-  };
-
-  if !file.read_to_string(buffer).is_ok() {
-    return false;
-  }
-
-  return true;
-}
-<span class="boring">}
-</span></code></pre></pre>
-<p>In this API design, the <code>bool</code> represents the concept of success or failure. However, I/O can fail for a number reason, e.g. if the file is not found or the user does not have read permission. The <code>Result</code> representation has a one-to-one mapping because <code>io::Error</code> has a separate value for each I/O error, while the <code>false</code> value must represent every I/O error. The consequence of the <code>bool</code> design is that the client cannot distinguish between failure cases given a return value of <code>false</code>.</p>
-<h2><a class="header" href="#the-main-idea-consistency-between-related-elements" id="the-main-idea-consistency-between-related-elements">The main idea: consistency between related elements</a></h2>
-<p>This main idea of this book is a principle of representation: <strong>consistency between related elements</strong>. In a system with many parts, it's often important that certain pieces be in sync with each other. For example:</p>
-<ul>
-<li>In an event listener, the event name (e.g. <code>&quot;click&quot;</code>) must be consistent with the event parameters (e.g. <code>mousex</code>).</li>
-<li>In a state machine, the machine's state (e.g. <code>FileOpen</code>) must be consistent with the set of actions permissible on the machine (e.g. <code>.close()</code>).</li>
-<li>In a function with variadic arguments, the order of arguments (e.g. <code>route(&quot;/:user/:message&quot;)</code>) must be consistent with the order of usage (e.g. <code>|u: User, m: Message|</code>).</li>
-</ul>
-<p>Enforcing consistency is often easier in a <strong>closed system</strong>, where every piece is defined and no further ones can be added. For example, consider an (inefficient) event system with a fixed set of events:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>enum Event {
-  Click { mousex: usize, mousey: usize },
-  KeyPress { keycode: usize }
-}
-
-struct EventSystem {
-  listeners: Vec&lt;Box&lt;dyn FnMut(Event) -&gt; ()&gt;&gt;
-}
-
-impl EventSystem {
-  fn add_listener(&amp;mut self, f: impl FnMut(Event) -&gt; () + 'static) {
-    self.listeners.push(Box::new(f));
-  }
-}
-
-fn example() {
-  let mut events = EventSystem { listeners: Vec::new() };
-  events.add_listener(|e| {
-    if let Event::Click { mousex, mousey } = e {
-      println!(&quot;Clicked: x={}, y={}&quot;, mousex, mousey);
-    }
-  });
-}
-<span class="boring">}
-</span></code></pre></pre>
-<p>The nature of Rust's <code>enum</code> enforces that if a <code>Click</code> event occurred, then (and only then) will the listener be able to access the <code>mousex</code> field. However, what if an API client wanted to add another event to the system? They cannot reach into the API and add another enum variant.</p>
-<p>Therein lies the core technical challenge: how can an API enforce consistency between related elements in an open system? Over the next few chapters, you'll learn how careful use of Rust's type system can achieve both of these goals.</p>
+                        <h1><a class="header" href="#type-maps" id="type-maps">Type maps</a></h1>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="variadics.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
-                        
-                            <a rel="next" href="state_machines.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
-                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -257,15 +184,11 @@ fn example() {
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="variadics.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
-                
-                    <a rel="next" href="state_machines.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
-                    </a>
                 
             </nav>
 
