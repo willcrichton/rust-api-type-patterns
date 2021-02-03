@@ -43,4 +43,4 @@ The remainder of the book is structured much like the example above. Each chapte
 2. Show the dynamically-typed and statically-typed implementations of an API for the system.
 3. Analyze what errors can happen in each flavor of API.
 
-You can consume this book à la carte, reading individual chapters as they're useful to you. But I have done my best to build a narrative thread between chapters. The content is ordered roughly from least to most complex. **TODO: explain the thread.**
+You can consume this book à la carte, reading individual chapters as they're useful to you. But each chapter does (somewhat) build on the previous ones, so you may enjoy a start-to-finish read as well.
