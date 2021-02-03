@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Type Maps - Rust API Type Patterns</title>
+        <title>Witnesses - Rust API Type Patterns</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">3.</strong> State Machines</a></li><li class="chapter-item expanded "><a href="variadics.html"><strong aria-hidden="true">4.</strong> Variadics</a></li><li class="chapter-item expanded "><a href="type_maps.html" class="active"><strong aria-hidden="true">5.</strong> Type Maps</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="access_control.html"><strong aria-hidden="true">3.</strong> Access Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="witnesses.html" class="active"><strong aria-hidden="true">3.1.</strong> Witnesses</a></li><li class="chapter-item expanded "><a href="guards.html"><strong aria-hidden="true">3.2.</strong> Guards</a></li></ol></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">4.</strong> State Machines</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="typestate.html"><strong aria-hidden="true">4.1.</strong> Typestate</a></li><li class="chapter-item expanded "><a href="state_combinators.html"><strong aria-hidden="true">4.2.</strong> State Combinators</a></li></ol></li><li class="chapter-item expanded "><a href="parallel_lists.html"><strong aria-hidden="true">5.</strong> Parallel Lists</a></li><li class="chapter-item expanded "><a href="registries.html"><strong aria-hidden="true">6.</strong> Registries</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,18 +163,85 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#type-maps" id="type-maps">Type maps</a></h1>
+                        <h1><a class="header" href="#witnesses" id="witnesses">Witnesses</a></h1>
+<p>Let's say we're designing a website with a panel that only admins can access. A naive approach relies on enforcing access control by convention:</p>
+<pre><code class="language-rust ignore">/// IMPORTANT: Only call this function when logged in as admin!
+fn render_admin_panel() -&gt; Html {
+  // ...
+}
+
+fn admin_panel_route_ok() -&gt; Html {
+  // We could remember to check...
+  if current_user().is_admin() {
+    render_admin_panel();
+  } else {
+    render_404();
+  }
+}
+
+fn admin_panel_route_whoops() -&gt; Html {
+  // Or we could just forget!
+  render_admin_panel();
+}
+</code></pre>
+<p>Here's an alternative API design that turns the convention into a requirement:</p>
+<pre><code class="language-rust ignore">mod admin {
+  // When Admin is hidden in a module,
+  // it can only be constructed by exported functions
+  pub struct Admin { /* .. */ }
+
+  impl User {
+    // Only returns Some(Admin) if user is an admin
+    pub fn try_admin(&amp;self) -&gt; Option&lt;Admin&gt; { /* ... */ }
+  }
+}
+
+// We add Admin as a parameter to the render function
+fn render_admin_panel(_admin: admin::Admin) -&gt; Html {
+  // ...
+}
+
+fn admin_panel_route_ok() -&gt; Html {
+  if let Some(admin) = current_user().try_admin() {
+    render_admin_panel(admin);
+  } else {
+    render_404();
+  }
+}
+
+fn admin_panel_route_whoops() -&gt; Html {
+  // TYPE ERROR: current_user() is not an admin!
+  render_admin_panel(current_user());
+
+  // TYPE ERROR: Admin has private fields and cannot be constructed
+  render_admin_panel(admin::Admin { .. });
+}
+</code></pre>
+<p>Here, the <code>Admin</code> struct is an example of a <strong>witness</strong>: an object that proves (or &quot;witnesses&quot;) a particular property, e.g. that a user is an admin. (The term comes from <a href="https://en.wikipedia.org/wiki/Witness_(mathematics)">proof theory</a>.) The witness pattern relies on two ideas:</p>
+<ol>
+<li>
+<p><strong>Witnesses prove properties by construction.</strong> The only way to create a value of type <code>Admin</code> should be via <code>try_admin</code>. If this is true, then having access to a value of type <code>Admin</code> is a proof that a user is an admin. &quot;By construction&quot; means the act of creating a value is equivalent to creating a proof of what that value represents (see: <a href="https://en.wikipedia.org/wiki/Curry%E2%80%93Howard_correspondence">Curry-Howard correspondence</a>).</p>
+</li>
+<li>
+<p><strong>Code that relies on properties takes witnesses as input.</strong> If an admin panel should only be rendered by an admin, then <code>render_admin_panel</code> should require that the function caller prove it has admin access. Even if the actual <code>admin</code> value is never used, because it is a required input, the function cannot be called without proof of access.</p>
+</li>
+</ol>
+<p>With these two ideas, the witness pattern can statically enforce access control. Witnesses encode access capabilities, and actions require witnesses before being executed. For a real-world example, check out <a href="https://rocket.rs/v0.4/guide/requests/#request-guards">Request Guards</a> in the Rocket framework (see also <a href="https://stanford-cs242.github.io/f18/lectures/07-1-sergio.html#rocket">Sergio's lecture notes</a>).</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="variadics.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="access_control.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
+                        
+                            <a rel="next" href="guards.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -184,11 +251,15 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="variadics.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="access_control.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
+                
+                    <a rel="next" href="guards.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
                 
             </nav>
 

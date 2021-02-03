@@ -1,0 +1,395 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Typestate - Rust API Type Patterns</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="access_control.html"><strong aria-hidden="true">3.</strong> Access Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="witnesses.html"><strong aria-hidden="true">3.1.</strong> Witnesses</a></li><li class="chapter-item expanded "><a href="guards.html"><strong aria-hidden="true">3.2.</strong> Guards</a></li></ol></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">4.</strong> State Machines</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="typestate.html" class="active"><strong aria-hidden="true">4.1.</strong> Typestate</a></li><li class="chapter-item expanded "><a href="state_combinators.html"><strong aria-hidden="true">4.2.</strong> State Combinators</a></li></ol></li><li class="chapter-item expanded "><a href="parallel_lists.html"><strong aria-hidden="true">5.</strong> Parallel Lists</a></li><li class="chapter-item expanded "><a href="registries.html"><strong aria-hidden="true">6.</strong> Registries</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Rust API Type Patterns</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#typestate" id="typestate">Typestate</a></h1>
+<p>Let's say we're implementing an API for a read-only file. It should adhere to the following state machine:</p>
+<center>
+<svg width="562" height="195" version="1.1" xmlns="http://www.w3.org/2000/svg">
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="194.5" cy="110.5" rx="38" ry="38"></ellipse>
+	<text x="164.5" y="116.5" font-family="Menlo, Courier New" font-size="14">reading</text>
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="355.5" cy="110.5" rx="38" ry="38"></ellipse>
+	<text x="342.5" y="116.5" font-family="Menlo, Courier New" font-size="14">eof</text>
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="522.5" cy="110.5" rx="38" ry="38"></ellipse>
+	<text x="496.5" y="116.5" font-family="Menlo, Courier New" font-size="14">closed</text>
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="522.5" cy="110.5" rx="32" ry="32"></ellipse>
+	<polygon stroke="black" stroke-width="1" points="93.5,110.5 156.5,110.5"></polygon>
+	<text x="1.5" y="116.5" font-family="Menlo, Courier New" font-size="14">open(path)</text>
+	<polygon fill="black" stroke-width="1" points="156.5,110.5 148.5,105.5 148.5,115.5"></polygon>
+	<path stroke="black" stroke-width="1" fill="none" d="M 177.748,76.557 A 28.5,28.5 0 1 1 211.252,76.557"></path>
+	<text x="170.5" y="16.5" font-family="Menlo, Courier New" font-size="14">read()</text>
+	<polygon fill="black" stroke-width="1" points="211.252,76.557 219.999,73.024 211.909,67.146"></polygon>
+	<polygon stroke="black" stroke-width="1" points="232.5,110.5 317.5,110.5"></polygon>
+	<polygon fill="black" stroke-width="1" points="317.5,110.5 309.5,105.5 309.5,115.5"></polygon>
+	<text x="251.5" y="101.5" font-family="Menlo, Courier New" font-size="14">read()</text>
+	<polygon stroke="black" stroke-width="1" points="393.5,110.5 484.5,110.5"></polygon>
+	<polygon fill="black" stroke-width="1" points="484.5,110.5 476.5,105.5 476.5,115.5"></polygon>
+	<text x="411.5" y="101.5" font-family="Menlo, Courier New" font-size="14">close()</text>
+	<path stroke="black" stroke-width="1" fill="none" d="M 491.036,131.749 A 265.6,265.6 0 0 1 225.964,131.749"></path>
+	<polygon fill="black" stroke-width="1" points="491.036,131.749 481.608,131.408 486.598,140.074"></polygon>
+	<text x="331.5" y="188.5" font-family="Menlo, Courier New" font-size="14">close()</text>
+</svg>
+</center>
+<p>A file is opened into a reading state, and is read until reaching the end-of-file (eof). In either state, the file can be closed. From the lens of access control, our API design goal is to only allow access to certain operations (eg <code>read()</code>) when an object is in a corresponding state (eg <code>reading</code>).</p>
+<p>As a first attempt, here's a perfectly reasonable API that's similar to <a href="https://doc.rust-lang.org/std/fs/struct.File.html"><code>std::fs::File</code></a>:</p>
+<pre><code class="language-rust ignore">struct File {
+  reached_eof: bool,
+  /* .. */
+}
+
+impl File {
+  pub fn open(path: String) -&gt; Option&lt;File&gt; { /* .. */ }
+
+  // Returns None if reached EOF
+  pub fn read(&amp;mut self) -&gt; Option&lt;Vec&lt;u8&gt;&gt; {
+    if self.reached_eof {
+      None
+    } else {
+      // read the file ..
+    }
+  }
+
+  pub fn close(self);
+}
+
+fn main() {
+  let mut f = File::open(&quot;test.txt&quot;.to_owned()).unwrap();
+  while let Some(bytes) = f.read() {
+    println!(&quot;{:?}&quot;, bytes);
+  }
+  f.read(); // This works! Just will return None
+  f.close();
+}
+</code></pre>
+<p>The key question for this API: how does it prevent calling <code>read()</code> in an EOF state? Here, the answer is: it doesn't. Rather, calling <code>read()</code> after EOF is a <strong>runtime error</strong>, represented by the <code>None</code> branch of the <code>Option</code> type. The state machine is only contained internally (<code>reached_eof</code>).</p>
+<h2><a class="header" href="#representing-states-as-structs" id="representing-states-as-structs">Representing states as structs</a></h2>
+<p>Let's say the goal is to prevent the user from <em>ever</em> calling <code>read()</code> in an EOF state. That is, the call to <code>f.read()</code> after the <code>while let</code> <em>should not compile in the first place</em>. Now we arrive at the concept of <strong>typestate</strong>: encoding the states of the state machine into the type system.</p>
+<pre><code class="language-rust ignore">// 1. Each state is its own struct
+struct ReadingFile { inner: File }
+struct EofFile { inner: File }
+
+enum ReadResult {
+  Read(ReadingFile, Vec&lt;u8&gt;),
+  Eof(EofFile)
+}
+
+impl ReadingFile {
+  pub fn open(path: String) -&gt; Option&lt;ReadingFile&gt; { /* .. */ }
+
+  // 2. Calling `read()` takes ownership of ReadingFile
+  pub fn read(self) -&gt; ReadResult {
+    match self.inner.read() {
+      // 3. Access to `ReadingFile` is only given back if not at EOF
+      Some(bytes) =&gt; ReadResult::Read(self, bytes)
+      None =&gt; ReadResult::Eof(EofFile { inner: self.inner })
+    }
+  }
+
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+
+impl EofFile {
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+
+fn main() {
+  let mut file = ReadingFile::open(&quot;test.txt&quot;.to_owned()).unwrap();
+  loop {
+    match file.read() {
+      ReadResult::Read(f, bytes) =&gt; {
+        println!(&quot;{:?}&quot;, bytes);
+        file = f;
+      }
+      ReadResult::Eof(f) =&gt; {
+        f.close();
+        break;
+      }
+    }
+  }
+  // file has been moved, can't call file.read() here
+}
+</code></pre>
+<p>This API design has three key ideas:</p>
+<ol>
+<li><strong>Each state is a struct</strong>: the <code>ReadingFile</code> and <code>EofFile</code> states are represented as distinct structs. This way, we can associate different methods with each.</li>
+<li><strong>Each state has only its transitions implemented:</strong> the <code>read()</code> method is implemented for <code>ReadingFile</code>, but not for <code>EofFile</code>, while both can call <code>close()</code>.</li>
+<li><strong>Transitions between states consume ownership:</strong> the <code>read()</code> method consumes <code>ReadingFile</code> and returns whichever state comes after. This prevents calling methods on an old state.</li>
+</ol>
+<h2><a class="header" href="#moving-states-into-a-type-parameter" id="moving-states-into-a-type-parameter">Moving states into a type parameter</a></h2>
+<p>One ugliness in this design is that the user has to manage a single logical object (the file) but split into multiple actual types (the states). An alternative design is to represent states as a <strong>type parameter</strong> to a single object, like so:</p>
+<pre><code class="language-rust ignore">struct Reading;
+struct Eof;
+
+struct File2&lt;State&gt; {
+  inner: File,
+  _state: PhantomData&lt;State&gt;
+}
+
+enum ReadResult {
+  Read(File2&lt;Reading&gt;, Vec&lt;u8&gt;),
+  Eof(File2&lt;Eof&gt;)
+}
+
+impl File2&lt;Reading&gt; {
+  pub fn open(path: String) -&gt; Option&lt;File2&lt;Reading&gt;&gt; { /* .. */ }
+
+  pub fn read(self) -&gt; ReadResult {
+    match self.inner.read() {
+      // 3. Access to `ReadingFile` is only given back if not at EOF
+      Some(bytes) =&gt; ReadResult::Read(self, bytes)
+      None =&gt; ReadResult::Eof(File2 { inner: self.inner, _state: PhantomData })
+    }
+  }
+
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+
+impl File2&lt;Eof&gt; {
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+</code></pre>
+<p>The API is largely the same, and the usage example from before still works. But on the implementation side, we now have to carry around this <a href="https://doc.rust-lang.org/std/marker/struct.PhantomData.html"><code>PhantomData</code></a> marker or else Rust complains about an unused type parameter.</p>
+<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<ul>
+<li><a href="https://stanford-cs242.github.io/f19/lectures/08-2-typestate">Stanford CS 242 - Typestate</a></li>
+<li><a href="https://yoric.github.io/post/rust-typestate/">Typestates in Rust</a></li>
+<li><a href="https://blog.systems.ethz.ch/blog/2018/a-hammer-you-can-only-hold-by-the-handle.html">A hammer you can only hold by the handle</a></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="state_machines.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="state_combinators.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="state_machines.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="state_combinators.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

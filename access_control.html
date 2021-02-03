@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Variadics - Rust API Type Patterns</title>
+        <title>Access Control - Rust API Type Patterns</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">3.</strong> State Machines</a></li><li class="chapter-item expanded "><a href="variadics.html" class="active"><strong aria-hidden="true">4.</strong> Variadics</a></li><li class="chapter-item expanded "><a href="type_maps.html"><strong aria-hidden="true">5.</strong> Type Maps</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="access_control.html" class="active"><strong aria-hidden="true">3.</strong> Access Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="witnesses.html"><strong aria-hidden="true">3.1.</strong> Witnesses</a></li><li class="chapter-item expanded "><a href="guards.html"><strong aria-hidden="true">3.2.</strong> Guards</a></li></ol></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">4.</strong> State Machines</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="typestate.html"><strong aria-hidden="true">4.1.</strong> Typestate</a></li><li class="chapter-item expanded "><a href="state_combinators.html"><strong aria-hidden="true">4.2.</strong> State Combinators</a></li></ol></li><li class="chapter-item expanded "><a href="parallel_lists.html"><strong aria-hidden="true">5.</strong> Parallel Lists</a></li><li class="chapter-item expanded "><a href="registries.html"><strong aria-hidden="true">6.</strong> Registries</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,20 +163,28 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#variadics" id="variadics">Variadics</a></h1>
+                        <h1><a class="header" href="#access-control" id="access-control">Access control</a></h1>
+<p>A common pattern in system design is that X can only happen if Y is true.</p>
+<ul>
+<li>A user can only access their account settings if logged in.</li>
+<li>A piece of data can only be accessed if its mutex is locked.</li>
+<li>A file can only be read if a user has read permissions.</li>
+</ul>
+<p>These properties are all instances of <strong>access control</strong>, where the ability to execute an action is predicated on access privileges.</p>
+<p>In terms of our representational principle, the two conceptual elements are the <strong>action</strong> (eg opening a webpage, reading data) and the <strong>access</strong> (logged in, locked a mutex). We will look at how to design APIs to ensure consistency between the action and the access.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="state_machines.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="main_idea.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="type_maps.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="witnesses.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -188,13 +196,13 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="state_machines.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="main_idea.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="type_maps.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="witnesses.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

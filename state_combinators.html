@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>State Machines - Rust API Type Patterns</title>
+        <title>State Combinators - Rust API Type Patterns</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="access_control.html"><strong aria-hidden="true">3.</strong> Access Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="witnesses.html"><strong aria-hidden="true">3.1.</strong> Witnesses</a></li><li class="chapter-item expanded "><a href="guards.html"><strong aria-hidden="true">3.2.</strong> Guards</a></li></ol></li><li class="chapter-item expanded "><a href="state_machines.html" class="active"><strong aria-hidden="true">4.</strong> State Machines</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="typestate.html"><strong aria-hidden="true">4.1.</strong> Typestate</a></li><li class="chapter-item expanded "><a href="state_combinators.html"><strong aria-hidden="true">4.2.</strong> State Combinators</a></li></ol></li><li class="chapter-item expanded "><a href="parallel_lists.html"><strong aria-hidden="true">5.</strong> Parallel Lists</a></li><li class="chapter-item expanded "><a href="registries.html"><strong aria-hidden="true">6.</strong> Registries</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="access_control.html"><strong aria-hidden="true">3.</strong> Access Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="witnesses.html"><strong aria-hidden="true">3.1.</strong> Witnesses</a></li><li class="chapter-item expanded "><a href="guards.html"><strong aria-hidden="true">3.2.</strong> Guards</a></li></ol></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">4.</strong> State Machines</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="typestate.html"><strong aria-hidden="true">4.1.</strong> Typestate</a></li><li class="chapter-item expanded "><a href="state_combinators.html" class="active"><strong aria-hidden="true">4.2.</strong> State Combinators</a></li></ol></li><li class="chapter-item expanded "><a href="parallel_lists.html"><strong aria-hidden="true">5.</strong> Parallel Lists</a></li><li class="chapter-item expanded "><a href="registries.html"><strong aria-hidden="true">6.</strong> Registries</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,44 +163,21 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#state-machines" id="state-machines">State Machines</a></h1>
-<p>Access control can be viewed as a special case of a <strong>state machine</strong>. For example, a mutex is a two-state machine:</p>
-<center>
-<svg width="522" height="155" version="1.1" xmlns="http://www.w3.org/2000/svg">
-	<ellipse stroke="black" stroke-width="1" fill="none" cx="473.5" cy="70.5" rx="47" ry="47"/>
-	<text x="446.5" y="76.5" font-family="Menlo, monospace" font-size="16">locked</text>
-	<ellipse stroke="black" stroke-width="1" fill="none" cx="209.5" cy="70.5" rx="47" ry="47"/>
-	<text x="172.5" y="76.5" font-family="Menlo, monospace" font-size="16">unlocked</text>
-	<path stroke="black" stroke-width="1" fill="none" d="M 437.283,100.248 A 180.958,180.958 0 0 1 245.717,100.248"/>
-	<polygon fill="black" stroke-width="1" points="245.717,100.248 249.857,108.725 255.151,100.241"/>
-	<text x="275.5" y="148.5" font-family="Menlo, monospace" font-size="16">Mutex::unlock()</text>
-	<polygon stroke="black" stroke-width="1" points="117.5,70.5 162.5,70.5"/>
-	<text x="0" y="76.5" font-family="Menlo, monospace" font-size="16">Mutex::new()</text>
-	<polygon fill="black" stroke-width="1" points="162.5,70.5 154.5,65.5 154.5,75.5"/>
-	<path stroke="black" stroke-width="1" fill="none" d="M 249.513,46.021 A 215.88,215.88 0 0 1 433.487,46.021"/>
-	<polygon fill="black" stroke-width="1" points="433.487,46.021 428.38,38.089 424.119,47.135"/>
-	<text x="285.5" y="16.5" font-family="Menlo, monospace" font-size="16">Mutex::lock()</text>
-</svg>
-</center>
-<p>State machines have two core concepts: <strong>states</strong> (the circles) and <strong>transitions</strong> (the arrows). When APIs represent state machines, the important question is whether the transitions are consistent with the states, e.g. you should not be able to unlock an unlocked mutex. Here are a few more examples of state machines in systems:</p>
-<ul>
-<li>A shopper can only checkout while their cart is not empty.</li>
-<li>A file can only be closed while its file descriptor is open.</li>
-<li>A <a href="https://rust-embedded.github.io/book/static-guarantees/state-machines.html">GPIO pin</a> can only be written to when in write mode.</li>
-</ul>
+                        <h1><a class="header" href="#state-combinators" id="state-combinators">State combinators</a></h1>
+<p>TODO: talk about session types</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="guards.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="typestate.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="typestate.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="parallel_lists.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -212,13 +189,13 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="guards.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="typestate.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="typestate.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="parallel_lists.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

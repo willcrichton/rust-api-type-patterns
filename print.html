@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">3.</strong> State Machines</a></li><li class="chapter-item expanded "><a href="variadics.html"><strong aria-hidden="true">4.</strong> Variadics</a></li><li class="chapter-item expanded "><a href="type_maps.html"><strong aria-hidden="true">5.</strong> Type Maps</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="access_control.html"><strong aria-hidden="true">3.</strong> Access Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="witnesses.html"><strong aria-hidden="true">3.1.</strong> Witnesses</a></li><li class="chapter-item expanded "><a href="guards.html"><strong aria-hidden="true">3.2.</strong> Guards</a></li></ol></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">4.</strong> State Machines</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="typestate.html"><strong aria-hidden="true">4.1.</strong> Typestate</a></li><li class="chapter-item expanded "><a href="state_combinators.html"><strong aria-hidden="true">4.2.</strong> State Combinators</a></li></ol></li><li class="chapter-item expanded "><a href="parallel_lists.html"><strong aria-hidden="true">5.</strong> Parallel Lists</a></li><li class="chapter-item expanded "><a href="registries.html"><strong aria-hidden="true">6.</strong> Registries</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -209,7 +209,7 @@ fn color_to_rgb_good(color: PrimaryColor) -&gt; (u8, u8, u8) {
 <li>Show the dynamically-typed and statically-typed implementations of an API for the system.</li>
 <li>Analyze what errors can happen in each flavor of API.</li>
 </ol>
-<p>You can consume this book à la carte, reading individual chapters as they're useful to you. But I have done my best to build a narrative thread between chapters. The content is ordered roughly from least to most complex. <strong>TODO: explain the thread.</strong></p>
+<p>You can consume this book à la carte, reading individual chapters as they're useful to you. But each chapter does (somewhat) build on the previous ones, so you may enjoy a start-to-finish read as well.</p>
 <h1><a class="header" href="#the-main-idea" id="the-main-idea">The Main Idea</a></h1>
 <p>An API is a computational representation of real-world concepts, and <strong>a good API has a small distance between the representation and the concept</strong>. This begs the question: what defines such a distance?</p>
 <h2><a class="header" href="#principles-of-representation-cardinality-mismatch" id="principles-of-representation-cardinality-mismatch">Principles of representation: cardinality mismatch</a></h2>
@@ -280,9 +280,897 @@ fn example() {
 </span></code></pre></pre>
 <p>The nature of Rust's <code>enum</code> enforces that if a <code>Click</code> event occurred, then (and only then) will the listener be able to access the <code>mousex</code> field. However, what if an API client wanted to add another event to the system? They cannot reach into the API and add another enum variant.</p>
 <p>Therein lies the core technical challenge: how can an API enforce consistency between related elements in an open system? Over the next few chapters, you'll learn how careful use of Rust's type system can achieve both of these goals.</p>
+<h1><a class="header" href="#access-control" id="access-control">Access control</a></h1>
+<p>A common pattern in system design is that X can only happen if Y is true.</p>
+<ul>
+<li>A user can only access their account settings if logged in.</li>
+<li>A piece of data can only be accessed if its mutex is locked.</li>
+<li>A file can only be read if a user has read permissions.</li>
+</ul>
+<p>These properties are all instances of <strong>access control</strong>, where the ability to execute an action is predicated on access privileges.</p>
+<p>In terms of our representational principle, the two conceptual elements are the <strong>action</strong> (eg opening a webpage, reading data) and the <strong>access</strong> (logged in, locked a mutex). We will look at how to design APIs to ensure consistency between the action and the access.</p>
+<h1><a class="header" href="#witnesses" id="witnesses">Witnesses</a></h1>
+<p>Let's say we're designing a website with a panel that only admins can access. A naive approach relies on enforcing access control by convention:</p>
+<pre><code class="language-rust ignore">/// IMPORTANT: Only call this function when logged in as admin!
+fn render_admin_panel() -&gt; Html {
+  // ...
+}
+
+fn admin_panel_route_ok() -&gt; Html {
+  // We could remember to check...
+  if current_user().is_admin() {
+    render_admin_panel();
+  } else {
+    render_404();
+  }
+}
+
+fn admin_panel_route_whoops() -&gt; Html {
+  // Or we could just forget!
+  render_admin_panel();
+}
+</code></pre>
+<p>Here's an alternative API design that turns the convention into a requirement:</p>
+<pre><code class="language-rust ignore">mod admin {
+  // When Admin is hidden in a module,
+  // it can only be constructed by exported functions
+  pub struct Admin { /* .. */ }
+
+  impl User {
+    // Only returns Some(Admin) if user is an admin
+    pub fn try_admin(&amp;self) -&gt; Option&lt;Admin&gt; { /* ... */ }
+  }
+}
+
+// We add Admin as a parameter to the render function
+fn render_admin_panel(_admin: admin::Admin) -&gt; Html {
+  // ...
+}
+
+fn admin_panel_route_ok() -&gt; Html {
+  if let Some(admin) = current_user().try_admin() {
+    render_admin_panel(admin);
+  } else {
+    render_404();
+  }
+}
+
+fn admin_panel_route_whoops() -&gt; Html {
+  // TYPE ERROR: current_user() is not an admin!
+  render_admin_panel(current_user());
+
+  // TYPE ERROR: Admin has private fields and cannot be constructed
+  render_admin_panel(admin::Admin { .. });
+}
+</code></pre>
+<p>Here, the <code>Admin</code> struct is an example of a <strong>witness</strong>: an object that proves (or &quot;witnesses&quot;) a particular property, e.g. that a user is an admin. (The term comes from <a href="https://en.wikipedia.org/wiki/Witness_(mathematics)">proof theory</a>.) The witness pattern relies on two ideas:</p>
+<ol>
+<li>
+<p><strong>Witnesses prove properties by construction.</strong> The only way to create a value of type <code>Admin</code> should be via <code>try_admin</code>. If this is true, then having access to a value of type <code>Admin</code> is a proof that a user is an admin. &quot;By construction&quot; means the act of creating a value is equivalent to creating a proof of what that value represents (see: <a href="https://en.wikipedia.org/wiki/Curry%E2%80%93Howard_correspondence">Curry-Howard correspondence</a>).</p>
+</li>
+<li>
+<p><strong>Code that relies on properties takes witnesses as input.</strong> If an admin panel should only be rendered by an admin, then <code>render_admin_panel</code> should require that the function caller prove it has admin access. Even if the actual <code>admin</code> value is never used, because it is a required input, the function cannot be called without proof of access.</p>
+</li>
+</ol>
+<p>With these two ideas, the witness pattern can statically enforce access control. Witnesses encode access capabilities, and actions require witnesses before being executed. For a real-world example, check out <a href="https://rocket.rs/v0.4/guide/requests/#request-guards">Request Guards</a> in the Rocket framework (see also <a href="https://stanford-cs242.github.io/f18/lectures/07-1-sergio.html#rocket">Sergio's lecture notes</a>).</p>
+<h1><a class="header" href="#guards" id="guards">Guards</a></h1>
+<p>Recall that witnesses are proofs of properties, like being a website admin. In the witness pattern, the actual value (e.g. <code>admin: Admin</code>) may not actually be used at runtime — its presence is purely for statically enforcing access control. When using witnesses, the API designer must carefully ensure that every time a piece of code makes an assumption (e.g. user is an admin), that the code has access to a corresponding witness.</p>
+<p>An alternative approach is to <strong>associate a witness with its runtime capabilities.</strong> To dig into that statement, we'll use the running example of a <code>Mutex&lt;T&gt;</code> that protects a value of type <code>T</code> given a <code>SystemMutex</code> (e.g. <a href="http://www.cs.kent.edu/%7Eruttan/sysprog/lectures/multi-thread/pthread_mutex_init.html">pthread_mutex</a>). Recall that a mutex should satisfy the following design goals:</p>
+<ol>
+<li><strong>Access control:</strong> Only one thread can access <code>T</code> at any given time by calling <code>SystemMutex::lock</code>.</li>
+<li><strong>Cleanup:</strong> Once a thread has finished accessing <code>T</code>, it should call <code>SystemMutex::unlock</code>.</li>
+</ol>
+<p>Here's a hypothetical <code>Mutex&lt;T&gt;</code> API:</p>
+<pre><code class="language-rust ignore">struct Mutex&lt;T&gt; {
+  t: UnsafeCell&lt;T&gt;,
+  system_mutex: SystemMutex
+}
+
+impl&lt;T&gt; Mutex&lt;T&gt; {
+  pub fn new(t: T) -&gt; Self { /* .. */ }
+
+  pub fn lock(&amp;self) -&gt; &amp;mut T {
+    self.system_mutex.lock();
+    unsafe { &amp;mut *self.t.get() }
+  }
+
+  pub fn unlock(&amp;self) {
+    self.system_mutex.unlock();
+  }
+}
+
+fn main() {
+  let mtx = Mutex::new(1);
+  let n = mtx.lock();
+  mtx.unlock();
+
+  let n2 = mtx.lock();
+
+  // two mutable pointers to same data! very bad!
+  *n = 1;
+  *n2 = 2;
+}
+</code></pre>
+<p>This API nominally enforces access control via encapsulation: the only way to access <code>T</code> is by calling <code>lock</code>, which ensures that <code>SystemMutex::lock</code> is called. However, the issue is that there is no mechanism which relates the lifetime of <code>&amp;mut T</code> to the lifetime of the lock on the system mutex. So an API client could forget to call <code>Mutex::unlock</code> which violates the cleanup design goal. Or worse, an API client could call <code>Mutex::unlock</code> <em>too early</em> which would allow other threads to access <code>T</code> simultaneously, violating the access control design goal.</p>
+<h2><a class="header" href="#witness-approach" id="witness-approach">Witness approach</a></h2>
+<p>How could we try to solve this problem with a witness? One possible approach is to return a witness to a mutex being locked, and use that witness to mediate access and cleanup.</p>
+<pre><code class="language-rust ignore">struct MutexIsLocked;
+
+struct Mutex&lt;T&gt; { /* .. */ }
+
+impl&lt;T&gt; Mutex&lt;T&gt; {
+  fn lock(&amp;self) -&gt; MutexIsLocked {
+    self.system_mutex.lock();
+  }
+
+  fn unlock(&amp;self, _witness: MutexIsLocked) {
+    self.system_mutex.unlock();
+  }
+
+  fn get(&amp;self, _witness: &amp;MutexIsLocked) -&gt; &amp;mut T {
+    unsafe { &amp;mut *self.t.get() }
+  }
+}
+
+fn main() {
+  let mtx = Mutex::new(1);
+  let witness = mtx.lock();
+  let n = mtx.get(&amp;witness);
+  mtx.unlock(witness);
+
+  let witness2 = mtx.lock();
+  let n2 = mtx.get(&amp;witness2);
+  *n = 1;
+  *n2 = 2;
+}
+</code></pre>
+<p>This interface is better than the previous one because:</p>
+<ol>
+<li><code>unlock</code> cannot be called at any time, it can only be called after <code>lock</code> because the witness ensures that the mutex is locked.</li>
+<li><code>unlock</code> cannot be called multiple times, because <code>unlock</code> takes ownership of the witness.</li>
+<li><code>Mutex::get</code> cannot be called after <code>Mutex::unlock</code> because <code>unlock</code> takes ownership of the witness.</li>
+</ol>
+<p>However, this interface still does not satisfy our design goals of access control and cleanup.</p>
+<ol>
+<li>As shown in <code>main</code>, the lifetime of the <code>&amp;mut T</code> can be longer than the lifetime of the witness. So access control is not enforced because dangling pointers to <code>T</code> are held after <code>unlock</code>.</li>
+<li>Nothing relates the <code>MutexIsLocked</code> witness to the mutex it came from. You could create two unrelated mutexes, and pass the witness from one into the other.</li>
+</ol>
+<p>Again, our main idea returns: <strong>consistency between related elements.</strong> Our witness-based API does not ensure that access to the mutex's data is consistent with access to the witness of the locked mutex.</p>
+<h2><a class="header" href="#guard-approach" id="guard-approach">Guard approach</a></h2>
+<p>Instead of a <code>MutexIsLocked</code> witness, we will use a <strong>guard</strong>: a data structure that both proves a property (a mutex is locked) <em>and</em> mediates access to data (the mutex's <code>T</code>). The idea is that calling <code>Mutex::lock</code> will return a <code>MutexGuard</code> which manages the system mutex in its constructor and destructor, and it provides access to the inner <code>T</code>.</p>
+<pre><code class="language-rust ignore">struct MutexGuard&lt;'a, T&gt; {
+  lock: &amp;'a Mutex&lt;T&gt;
+}
+
+impl&lt;'a, T&gt; MutexGuard&lt;'a, T&gt; {
+  fn new(lock: &amp;'a Mutex&lt;T&gt;) -&gt; Self {
+    lock.system_mutex.lock();
+    MutexGuard { lock }
+  }
+
+  fn get(&amp;mut self) -&gt; &amp;mut T {
+    &amp;mut *self.lock.t
+  }
+}
+
+impl&lt;'a, T&gt; Drop for MutexGuard&lt;'a, T&gt; {
+  fn drop(&amp;mut self) {
+    self.lock.system_mutex.unlock();
+  }
+}
+
+struct Mutex&lt;T&gt; { /* same as before */ }
+
+impl&lt;T&gt; Mutex&lt;T&gt; {
+  pub fn lock&lt;'a&gt;(&amp;'a self) -&gt; MutexGuard&lt;'a, T&gt; {
+    MutexGuard::new(self)
+  }
+}
+
+fn main() {
+  let mtx = Mutex::new(1);
+  {
+    let guard = mtx.lock();
+    let n = guard.get();
+    *n = 1;
+  }
+
+  {
+    let guard = mtx.lock();
+    let n = guard.get();
+    *n = 2;
+  }
+}
+</code></pre>
+<p>Thise API now enforces both access control and cleanup:</p>
+<ol>
+<li><strong>Access control:</strong> when a thread calls <code>MutexGuard::get</code>, the borrow on <code>T</code> can only last as long as the <code>MutexGuard</code>, preventing dangling pointers. And the mutex is guaranteed to be locked by construction when <code>MutexGuard</code> exists.</li>
+<li><strong>Cleanup:</strong> only after all borrows to <code>T</code> have ended will <code>MutexGuard</code> be dropped, which then automatically unlocks the system mutex. The API client cannot possibly forget or unlock in the wrong order.</li>
+</ol>
+<p>For more examples, this pattern is used throughout the standard library: <a href="https://doc.rust-lang.org/stable/std/sync/struct.Mutex.html"><code>Mutex&lt;T&gt;</code></a>, <a href="https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html"><code>RwLock&lt;T&gt;</code></a>, and <a href="https://doc.rust-lang.org/stable/std/cell/struct.RefCell.html"><code>RefCell&lt;T&gt;</code></a>.</p>
 <h1><a class="header" href="#state-machines" id="state-machines">State Machines</a></h1>
-<h1><a class="header" href="#variadics" id="variadics">Variadics</a></h1>
-<h1><a class="header" href="#type-maps" id="type-maps">Type maps</a></h1>
+<p>Access control can be viewed as a special case of a <strong>state machine</strong>. For example, a mutex is a two-state machine:</p>
+<center>
+<svg width="522" height="155" version="1.1" xmlns="http://www.w3.org/2000/svg">
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="473.5" cy="70.5" rx="47" ry="47"/>
+	<text x="446.5" y="76.5" font-family="Menlo, monospace" font-size="16">locked</text>
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="209.5" cy="70.5" rx="47" ry="47"/>
+	<text x="172.5" y="76.5" font-family="Menlo, monospace" font-size="16">unlocked</text>
+	<path stroke="black" stroke-width="1" fill="none" d="M 437.283,100.248 A 180.958,180.958 0 0 1 245.717,100.248"/>
+	<polygon fill="black" stroke-width="1" points="245.717,100.248 249.857,108.725 255.151,100.241"/>
+	<text x="275.5" y="148.5" font-family="Menlo, monospace" font-size="16">Mutex::unlock()</text>
+	<polygon stroke="black" stroke-width="1" points="117.5,70.5 162.5,70.5"/>
+	<text x="0" y="76.5" font-family="Menlo, monospace" font-size="16">Mutex::new()</text>
+	<polygon fill="black" stroke-width="1" points="162.5,70.5 154.5,65.5 154.5,75.5"/>
+	<path stroke="black" stroke-width="1" fill="none" d="M 249.513,46.021 A 215.88,215.88 0 0 1 433.487,46.021"/>
+	<polygon fill="black" stroke-width="1" points="433.487,46.021 428.38,38.089 424.119,47.135"/>
+	<text x="285.5" y="16.5" font-family="Menlo, monospace" font-size="16">Mutex::lock()</text>
+</svg>
+</center>
+<p>State machines have two core concepts: <strong>states</strong> (the circles) and <strong>transitions</strong> (the arrows). When APIs represent state machines, the important question is whether the transitions are consistent with the states, e.g. you should not be able to unlock an unlocked mutex. Here are a few more examples of state machines in systems:</p>
+<ul>
+<li>A shopper can only checkout while their cart is not empty.</li>
+<li>A file can only be closed while its file descriptor is open.</li>
+<li>A <a href="https://rust-embedded.github.io/book/static-guarantees/state-machines.html">GPIO pin</a> can only be written to when in write mode.</li>
+</ul>
+<h1><a class="header" href="#typestate" id="typestate">Typestate</a></h1>
+<p>Let's say we're implementing an API for a read-only file. It should adhere to the following state machine:</p>
+<center>
+<svg width="562" height="195" version="1.1" xmlns="http://www.w3.org/2000/svg">
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="194.5" cy="110.5" rx="38" ry="38"></ellipse>
+	<text x="164.5" y="116.5" font-family="Menlo, Courier New" font-size="14">reading</text>
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="355.5" cy="110.5" rx="38" ry="38"></ellipse>
+	<text x="342.5" y="116.5" font-family="Menlo, Courier New" font-size="14">eof</text>
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="522.5" cy="110.5" rx="38" ry="38"></ellipse>
+	<text x="496.5" y="116.5" font-family="Menlo, Courier New" font-size="14">closed</text>
+	<ellipse stroke="black" stroke-width="1" fill="none" cx="522.5" cy="110.5" rx="32" ry="32"></ellipse>
+	<polygon stroke="black" stroke-width="1" points="93.5,110.5 156.5,110.5"></polygon>
+	<text x="1.5" y="116.5" font-family="Menlo, Courier New" font-size="14">open(path)</text>
+	<polygon fill="black" stroke-width="1" points="156.5,110.5 148.5,105.5 148.5,115.5"></polygon>
+	<path stroke="black" stroke-width="1" fill="none" d="M 177.748,76.557 A 28.5,28.5 0 1 1 211.252,76.557"></path>
+	<text x="170.5" y="16.5" font-family="Menlo, Courier New" font-size="14">read()</text>
+	<polygon fill="black" stroke-width="1" points="211.252,76.557 219.999,73.024 211.909,67.146"></polygon>
+	<polygon stroke="black" stroke-width="1" points="232.5,110.5 317.5,110.5"></polygon>
+	<polygon fill="black" stroke-width="1" points="317.5,110.5 309.5,105.5 309.5,115.5"></polygon>
+	<text x="251.5" y="101.5" font-family="Menlo, Courier New" font-size="14">read()</text>
+	<polygon stroke="black" stroke-width="1" points="393.5,110.5 484.5,110.5"></polygon>
+	<polygon fill="black" stroke-width="1" points="484.5,110.5 476.5,105.5 476.5,115.5"></polygon>
+	<text x="411.5" y="101.5" font-family="Menlo, Courier New" font-size="14">close()</text>
+	<path stroke="black" stroke-width="1" fill="none" d="M 491.036,131.749 A 265.6,265.6 0 0 1 225.964,131.749"></path>
+	<polygon fill="black" stroke-width="1" points="491.036,131.749 481.608,131.408 486.598,140.074"></polygon>
+	<text x="331.5" y="188.5" font-family="Menlo, Courier New" font-size="14">close()</text>
+</svg>
+</center>
+<p>A file is opened into a reading state, and is read until reaching the end-of-file (eof). In either state, the file can be closed. From the lens of access control, our API design goal is to only allow access to certain operations (eg <code>read()</code>) when an object is in a corresponding state (eg <code>reading</code>).</p>
+<p>As a first attempt, here's a perfectly reasonable API that's similar to <a href="https://doc.rust-lang.org/std/fs/struct.File.html"><code>std::fs::File</code></a>:</p>
+<pre><code class="language-rust ignore">struct File {
+  reached_eof: bool,
+  /* .. */
+}
+
+impl File {
+  pub fn open(path: String) -&gt; Option&lt;File&gt; { /* .. */ }
+
+  // Returns None if reached EOF
+  pub fn read(&amp;mut self) -&gt; Option&lt;Vec&lt;u8&gt;&gt; {
+    if self.reached_eof {
+      None
+    } else {
+      // read the file ..
+    }
+  }
+
+  pub fn close(self);
+}
+
+fn main() {
+  let mut f = File::open(&quot;test.txt&quot;.to_owned()).unwrap();
+  while let Some(bytes) = f.read() {
+    println!(&quot;{:?}&quot;, bytes);
+  }
+  f.read(); // This works! Just will return None
+  f.close();
+}
+</code></pre>
+<p>The key question for this API: how does it prevent calling <code>read()</code> in an EOF state? Here, the answer is: it doesn't. Rather, calling <code>read()</code> after EOF is a <strong>runtime error</strong>, represented by the <code>None</code> branch of the <code>Option</code> type. The state machine is only contained internally (<code>reached_eof</code>).</p>
+<h2><a class="header" href="#representing-states-as-structs" id="representing-states-as-structs">Representing states as structs</a></h2>
+<p>Let's say the goal is to prevent the user from <em>ever</em> calling <code>read()</code> in an EOF state. That is, the call to <code>f.read()</code> after the <code>while let</code> <em>should not compile in the first place</em>. Now we arrive at the concept of <strong>typestate</strong>: encoding the states of the state machine into the type system.</p>
+<pre><code class="language-rust ignore">// 1. Each state is its own struct
+struct ReadingFile { inner: File }
+struct EofFile { inner: File }
+
+enum ReadResult {
+  Read(ReadingFile, Vec&lt;u8&gt;),
+  Eof(EofFile)
+}
+
+impl ReadingFile {
+  pub fn open(path: String) -&gt; Option&lt;ReadingFile&gt; { /* .. */ }
+
+  // 2. Calling `read()` takes ownership of ReadingFile
+  pub fn read(self) -&gt; ReadResult {
+    match self.inner.read() {
+      // 3. Access to `ReadingFile` is only given back if not at EOF
+      Some(bytes) =&gt; ReadResult::Read(self, bytes)
+      None =&gt; ReadResult::Eof(EofFile { inner: self.inner })
+    }
+  }
+
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+
+impl EofFile {
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+
+fn main() {
+  let mut file = ReadingFile::open(&quot;test.txt&quot;.to_owned()).unwrap();
+  loop {
+    match file.read() {
+      ReadResult::Read(f, bytes) =&gt; {
+        println!(&quot;{:?}&quot;, bytes);
+        file = f;
+      }
+      ReadResult::Eof(f) =&gt; {
+        f.close();
+        break;
+      }
+    }
+  }
+  // file has been moved, can't call file.read() here
+}
+</code></pre>
+<p>This API design has three key ideas:</p>
+<ol>
+<li><strong>Each state is a struct</strong>: the <code>ReadingFile</code> and <code>EofFile</code> states are represented as distinct structs. This way, we can associate different methods with each.</li>
+<li><strong>Each state has only its transitions implemented:</strong> the <code>read()</code> method is implemented for <code>ReadingFile</code>, but not for <code>EofFile</code>, while both can call <code>close()</code>.</li>
+<li><strong>Transitions between states consume ownership:</strong> the <code>read()</code> method consumes <code>ReadingFile</code> and returns whichever state comes after. This prevents calling methods on an old state.</li>
+</ol>
+<h2><a class="header" href="#moving-states-into-a-type-parameter" id="moving-states-into-a-type-parameter">Moving states into a type parameter</a></h2>
+<p>One ugliness in this design is that the user has to manage a single logical object (the file) but split into multiple actual types (the states). An alternative design is to represent states as a <strong>type parameter</strong> to a single object, like so:</p>
+<pre><code class="language-rust ignore">struct Reading;
+struct Eof;
+
+struct File2&lt;State&gt; {
+  inner: File,
+  _state: PhantomData&lt;State&gt;
+}
+
+enum ReadResult {
+  Read(File2&lt;Reading&gt;, Vec&lt;u8&gt;),
+  Eof(File2&lt;Eof&gt;)
+}
+
+impl File2&lt;Reading&gt; {
+  pub fn open(path: String) -&gt; Option&lt;File2&lt;Reading&gt;&gt; { /* .. */ }
+
+  pub fn read(self) -&gt; ReadResult {
+    match self.inner.read() {
+      // 3. Access to `ReadingFile` is only given back if not at EOF
+      Some(bytes) =&gt; ReadResult::Read(self, bytes)
+      None =&gt; ReadResult::Eof(File2 { inner: self.inner, _state: PhantomData })
+    }
+  }
+
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+
+impl File2&lt;Eof&gt; {
+  pub fn close(self) {
+    self.inner.close();
+  }
+}
+</code></pre>
+<p>The API is largely the same, and the usage example from before still works. But on the implementation side, we now have to carry around this <a href="https://doc.rust-lang.org/std/marker/struct.PhantomData.html"><code>PhantomData</code></a> marker or else Rust complains about an unused type parameter.</p>
+<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<ul>
+<li><a href="https://stanford-cs242.github.io/f19/lectures/08-2-typestate">Stanford CS 242 - Typestate</a></li>
+<li><a href="https://yoric.github.io/post/rust-typestate/">Typestates in Rust</a></li>
+<li><a href="https://blog.systems.ethz.ch/blog/2018/a-hammer-you-can-only-hold-by-the-handle.html">A hammer you can only hold by the handle</a></li>
+</ul>
+<h1><a class="header" href="#state-combinators" id="state-combinators">State combinators</a></h1>
+<p>TODO: talk about session types</p>
+<h1><a class="header" href="#parallel-lists" id="parallel-lists">Parallel Lists</a></h1>
+<p>Another common pattern in system design is to have two lists of pairwise-related (or &quot;parallel&quot;) elements. For example, consider <code>println</code>:</p>
+<pre><code class="language-rust ignore">println!(&quot;#{:03} {}: {}&quot;, id, user, message);
+</code></pre>
+<p>The first list is the format directives (e.g. <code>{}</code>) in the format string. The second list is the inputs (e.g. <code>id</code>) to <code>println!</code>. These lists must have the same length.</p>
+<p>As another example, consider routing in a web server:</p>
+<pre><code class="language-rust ignore">#[route(&quot;/user/:id/messages/:message_id&quot;)]
+fn user_message(id: Id, message_id: MessageId) {
+ /* .. /
+}
+</code></pre>
+<p>The first list is the routing variables (e.g. <code>:id</code>) and the second is the function parameters (e.g. <code>id: Id</code>). These lists must have the same length and corresponding types.</p>
+<p>I'll show you how to use <strong>heterogeneous lists</strong> (H-lists), or lists of values of different types, to implement APIs with parallel lists. Specifically, we will implement a type-safe printf. For a real-world example, you can check out how the <a href="https://docs.rs/warp/">warp framework</a> uses H-lists to do type-safe web routing.</p>
+<h2><a class="header" href="#core-mechanism-hlist" id="core-mechanism-hlist">Core mechanism: HList</a></h2>
+<p>First, we need to understand H-lists. An H-list is a sequence of values of potentially different types. For example, <code>[1, &quot;a&quot;, true]</code> is an H-list, but not a valid Rust vector. H-lists are implemented in Rust using a linked-list style:</p>
+<pre><code class="language-rust ignore">struct HNil;
+struct HCons&lt;Head, Tail&gt; {
+  head: Head,
+  tail: Tail
+}
+
+let example: HCons&lt;i32, HCons&lt;bool, HNil&gt;&gt; =
+  HCons{head: 1, tail: HCons{head: true, tail: HNil}};
+</code></pre>
+<p>The key idea is that the type of an H-list changes every time you make a change to it. By contrast, if you push to a <code>Vec&lt;T&gt;</code>, the type of the vector stays the same.</p>
+<p>Just like Rust has <code>vec![]</code>, we can use the <a href="https://github.com/lloydmeta/frunk#hlist">frunk</a> crate to get an <code>hlist!</code> macro.</p>
+<pre><code class="language-rust ignore">let example = hlist![1, true]; // same as above
+</code></pre>
+<h2><a class="header" href="#setting-up-printf" id="setting-up-printf">Setting up printf</a></h2>
+<p>Let's go back to the ingredients of printf. We need a format string and an argument list. The key idea is to represent both with an H-list, and carefully use Rust's traits to ensure our desired property: the number of arguments should match the number of holes.</p>
+<p>First, to represent format strings, we will have a sequence of structs that represent each part of the string.</p>
+<pre><code class="language-rust ignore">pub struct FString(&amp;'static str);
+pub struct FVar;
+
+// Assume that we compile &quot;Hello {}! The first prime is {}&quot; into this code.
+// That would be a simple syntactic transformation.
+let example = hlist![
+  FString(&quot;Hello &quot;), FVar, FString(&quot;! The first prime is &quot;), FVar
+];
+</code></pre>
+<p>To represent arguments, we will use a matching H-list of values. For example:</p>
+<pre><code class="language-rust ignore">let args = hlist![&quot;world&quot;, 2];
+</code></pre>
+<p>Then, our goal is to create a function <code>format</code> such that this is true:</p>
+<pre><code class="language-rust ignore">assert_eq!(
+  example.format(args),
+  &quot;Hello world! The first prime is 2&quot;
+);
+</code></pre>
+<p>And this should be a compile-time (NOT run-time) error:</p>
+<pre><code class="language-rust ignore">example.format(hlist![&quot;Only one arg&quot;]);
+</code></pre>
+<h2><a class="header" href="#the-format-trait" id="the-format-trait">The Format trait</a></h2>
+<p>First, we need to define the signature of our <code>format</code> function.</p>
+<pre><code class="language-rust ignore">trait Format&lt;ArgList&gt; {
+  fn format(&amp;self, args: ArgList) -&gt; String;
+}
+</code></pre>
+<p>Here, <code>self</code> is the H-list of the format directives, and <code>ArgList</code> is the H-list of the variadic arguments. <code>Format</code> need to take <code>ArgList</code> as a type parameter, because its type will change as we remove elements from the <code>ArgList</code> list.</p>
+<p>Now, we proceed to implement the <code>Format</code> trait by cases. First, the base case for reaching the end of the format list <code>HNil</code>:</p>
+<pre><code class="language-rust ignore">impl Format&lt;HNil&gt; for HNil {
+  fn format(&amp;self, _args: HNil) -&gt; String {
+    &quot;&quot;.to_string()
+  }
+}
+</code></pre>
+<p>This impl says that when we reach the end of a format list, just return the empty string. And the only argument we will accept is an empty argument list. Combined with the next impls, this inductively ensures that extra arguments are not accepted.</p>
+<p>Next, we will implement <code>FString</code>. This implementation should use the string constant contained in the <code>FString</code> struct, and combine it recursively with the rest of the format list. We don't use variadic arguments for <code>FString</code>, so they get passed along. In Rust, this English specification becomes:</p>
+<pre><code class="language-rust ignore">impl&lt;ArgList, FmtList&gt; Format&lt;ArgList&gt;
+for HCons&lt;FString, FmtList&gt;
+where FmtList: Format&lt;ArgList&gt;
+{
+  fn format(&amp;self, args: ArgList) -&gt; String {
+    self.head.0.to_owned() + &amp;self.tail.format(args)
+  }
+}
+</code></pre>
+<p>Note that we have to add <code>FmtList: Format&lt;ArgList&gt;</code> to ensure the recursive call to <code>self.tail.format</code> works. Also note that we aren't implementing <code>Format</code> directly on <code>FString</code>, but rather on an H-list containing <code>FString</code>.</p>
+<p>Finally, the most complex case, <code>FVar</code>. We want this impl to take an argument from the <code>ArgList</code>, then format the remaining format list with the remaining arguments.</p>
+<pre><code class="language-rust ignore">impl&lt;T, ArgList, FmtList&gt; Format&lt;HCons&lt;T, ArgList&gt;&gt;
+for HCons&lt;FVar, FmtList&gt;
+where
+  FmtList: Format&lt;ArgList&gt;,
+  T: ToString,
+{
+  fn format(&amp;self, args: HCons&lt;T, ArgList&gt;) -&gt; String {
+    args.head.to_string() + &amp;self.tail.format(args.tail)
+  }
+}
+</code></pre>
+<p>Be careful to observe which H-list is being accessed by <code>head</code> and <code>tail</code>. Here, the <code>args</code> H-list provides the data to fill the hole via <code>args.head</code>.</p>
+<h2><a class="header" href="#checking-our-properties" id="checking-our-properties">Checking our properties</a></h2>
+<p>With this implementation, our correct example successfully compiles and runs:</p>
+<pre><code class="language-rust ignore">let example = hlist![
+  FString(&quot;Hello &quot;), FVar, FString(&quot;! The first prime is &quot;), FVar
+];
+assert_eq!(
+  example.format(hlist![&quot;world&quot;, 2]),
+  &quot;Hello world! The first prime is 2&quot;
+);
+</code></pre>
+<p>What about our incorrect example? If we write this:</p>
+<pre><code class="language-rust ignore">example.format(hlist![&quot;just one arg&quot;]);
+</code></pre>
+<p>This code fails to compile with the error:</p>
+<pre><code class="language-ignore">error[E0308]: mismatched types
+  --&gt; src/printf.rs:48:18
+   |
+48 |   example.format(hlist![&quot;just one arg&quot;]);
+   |                  ^^^^^^^^^^^^^^^^^^^^^^
+   |                  expected struct `Cons`, found struct `HNil`
+   |
+   = note: expected struct `HCons&lt;_, HNil&gt;`
+              found struct `HNil`
+</code></pre>
+<p>While the error is enigmatic, our mistake is at least correctly caught at compile-time. This is because Rust deduces that <code>example.format()</code> expects an H-list of the shape <code>HCons&lt;_, HCons&lt;_, HNil&gt;&gt;</code>, but it finds <code>HNil</code> too soon in our 1-element H-list. A similar error occurs when providing too many args.</p>
+<p>Stupendous! We have successfully implemented a type-safe printf using H-lists and traits.</p>
+<h2><a class="header" href="#extending-our-abstraction" id="extending-our-abstraction">Extending our abstraction</a></h2>
+<p>Right now, our <code>Format</code> function just checks that the format list and argument list are the same length. We could extend our format structures, for example to ensure that an <code>FVar</code> must be a particular type, or must use <code>Debug</code> vs. <code>Display</code>. Here's the sketch of such a strategy:</p>
+<pre><code class="language-rust ignore">use std::marker::PhantomData;
+
+// Add flags for whether using Display or Debug
+pub struct FDisplay;
+pub struct FDebug;
+
+// Use a type parameter with PhantomData to represent the intended type
+pub struct FVar&lt;T, Flag&gt;(PhantomData&lt;(T, Flag)&gt;);
+
+// Now, T has to be the same between the format list and arg list
+// Also, FDisplay flag requires that `T: Display`
+impl&lt;T, ArgList, FmtList&gt; Format&lt;HCons&lt;T, ArgList&gt;&gt;
+for HCons&lt;FVar&lt;T, FDisplay&gt;, FmtList&gt;
+where
+  FmtList: Format&lt;ArgList&gt;,
+  T: Display,
+{
+  fn format(&amp;self, args: HCons&lt;T, ArgList&gt;) -&gt; String {
+    // using format! is cheating, but you get the idea
+    format!(&quot;{}&quot;, args) + &amp;self.tail.format(args.tail)
+  }
+}
+
+// Similar impl for `T: Debug` when `FDebug` is used
+</code></pre>
+<p>With this approach, if our format list and arg list differ in type:</p>
+<pre><code class="language-rust ignore">let fmt = hlist![FString(&quot;n: &quot;), FVar::&lt;i32, FDisplay&gt;(PhantomData)];
+fmt.format(hlist![&quot;not a number&quot;]);
+</code></pre>
+<p>Then the code will not compile with the error, <code>&amp;'static str is not i32</code>.</p>
+<h1><a class="header" href="#registries" id="registries">Registries</a></h1>
+<p>Extensible systems, or frameworks where the client plugs in their own functionality, often have a notion of &quot;registration&quot; to associate the user's code with a piece of the framework. For example:</p>
+<ul>
+<li>In event systems, users can register callbacks to be triggered when an event occurs.</li>
+<li>In dependency injection systems, users register dependencies which gets plumbed to other code that is registered to request that dependency.</li>
+</ul>
+<p>These systems use <strong>registries</strong> to maintain sets of event listeners or dependencies. The key API design challenge is to maintain consistency between the registered objects and the code that reads the registry. As a running example, we will use an event system. Consider this API that works like JavaScript's <a href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener"><code>addEventListener</code></a>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use std::any::Any;
+</span><span class="boring">use std::collections::HashMap;
+</span>type EventListener = Box&lt;dyn Fn(&amp;dyn Any)&gt;;
+
+#[derive(Default)]
+struct EventRegistry {
+  listeners: HashMap&lt;String, Vec&lt;EventListener&gt;&gt;
+}
+
+impl EventRegistry {
+  fn add_event_listener(&amp;mut self, event: String, f: EventListener) {
+    self.listeners.entry(event).or_insert_with(Vec::new).push(f);
+  }
+
+  fn trigger(&amp;self, event: String, data: &amp;dyn Any) {
+    let listeners = self.listeners.get(&amp;event).unwrap();
+    for listener in listeners.iter() {
+      listener(data);
+    }
+  }
+}
+
+struct OnClick { mouse_x: f32, mouse_y: f32 }
+
+fn main() {
+  let mut events = EventRegistry::default();
+  events.add_event_listener(&quot;click&quot;.to_owned(), Box::new(|event| {
+    let event = event.downcast_ref::&lt;OnClick&gt;().unwrap();
+    assert_eq!(event.mouse_x, 1.);
+  }));
+
+  let event = OnClick { mouse_x: 1., mouse_y: 3. };
+  events.trigger(&quot;click&quot;.to_owned(), &amp;event);
+}
+</code></pre></pre>
+<p>How could a user incorrectlmouse_y work with this API? They could:</p>
+<ul>
+<li>
+<p><strong>Typo the event name</strong>: as with all stringly-typed programming, the event name could be the wrong string, like <code>&quot;clack&quot;</code> instead of <code>&quot;click&quot;</code>, for either the listener or the trigger.</p>
+</li>
+<li>
+<p><strong>Send the wrong payload for an event</strong>: event listeners take literally any type as input. A user could trigger a <code>MouseEvent</code> for the <code>&quot;click&quot;</code> string.</p>
+</li>
+<li>
+<p><strong>Use the event payload incorrectly:</strong>: a user could incorrectly cast the payload to <code>MouseEvent</code> for a listener to the <code>&quot;click&quot;</code> event.</p>
+</li>
+</ul>
+<p>The core issue is that the event name <code>&quot;click&quot;</code> and the event data <code>OnClick</code> are linked by convention but not by design. This issue is inherent to registries that use strings to identify objects.</p>
+<p>Instead, I will show you how to design both an event system and a dependency injection system using <strong>types as keys intead of strings as keys</strong>. Type-based registries will avoid all of the issues in the API above.</p>
+<h2><a class="header" href="#1-type-safe-events" id="1-type-safe-events">1. Type-safe events</a></h2>
+<p>Our goal is to write an API that looks like this from the client's perspective:</p>
+<pre><code class="language-rust ignore">struct OnClick {
+  mouse_x: f32,
+  mouse_y: f32,
+}
+
+let mut events = EventRegistry::new();
+
+// The event is passed in as a type parameter instead of a string
+events.add_event_listener::&lt;OnClick&gt;(|event| {
+  assert_eq!(event.mouse_x, 10.);
+  assert_eq!(event.mouse_y, 5.);
+});
+
+// The event type could alternatively be inferred from the closure
+events.add_event_listener(|event: &amp;OnClick| {
+  assert_eq!(event.mouse_x, 10.);
+  assert_eq!(event.mouse_y, 5.);
+});
+
+events.trigger(&amp;OnClick {
+  mouse_x: 10.,
+  mouse_y: 5.,
+})
+</code></pre>
+<p>The outline of the underlying API looks like this:</p>
+<pre><code class="language-rust ignore">trait Event = 'static;
+trait EventListener&lt;E&gt; = Fn(&amp;E) -&gt; () + 'static;
+
+struct EventRegistry { /* .. */ };
+
+impl EventRegistry {
+  fn add_event_listener&lt;E: Event&gt;(
+    &amp;mut self,
+    f: impl EventListener&lt;E&gt;
+  ) {
+    /* .. */
+  }
+
+  fn trigger&lt;E: Event&gt;(
+    &amp;self,
+    event: &amp;E
+  ) {
+    /* .. */
+  }
+}
+</code></pre>
+<p>Each method on the event registry takes an event type <code>E</code> as input, rather than a string key. The registry associates listeners with that type, and then looks up listeners with that type.</p>
+<h3><a class="header" href="#mapping-types-to-values" id="mapping-types-to-values">Mapping types to values</a></h3>
+<p>To associate values (e.g. event listeners) with types, we will make a core building block: the <code>TypeMap</code>.</p>
+<p>Rust has <a href="https://doc.rust-lang.org/std/any/"><code>std::any</code></a> for this purpose. <a href="https://doc.rust-lang.org/std/any/struct.TypeId.html"><code>TypeId</code></a> allows us to get a unique, hashable identifier for each type. <a href="https://doc.rust-lang.org/std/any/trait.Any.html"><code>Any</code></a> allows us to up-cast/down-cast objects at runtime. Hence, our <code>TypeMap</code> will map from <code>TypeId</code> to <code>Box&lt;dyn Any&gt;</code>.</p>
+<pre><code class="language-rust ignore">use std::collections::HashMap;
+use std::any::{TypeId, Any};
+
+struct TypeMap(HashMap&lt;TypeId, Box&lt;dyn Any&gt;&gt;);
+</code></pre>
+<p>To add an element to the map:</p>
+<pre><code class="language-rust ignore">impl TypeMap {
+  pub fn set&lt;T: Any + 'static&gt;(&amp;mut self, t: T) {
+    self.0.insert(TypeId::of::&lt;T&gt;(), Box::new(t));
+  }
+}
+</code></pre>
+<p>This means our map has one unique value for a given type. For example, if we use the <code>TypeMap</code> like this:</p>
+<pre><code class="language-rust ignore">let mut map = TypeMap::new();
+map.set::&lt;i32&gt;(1);
+</code></pre>
+<blockquote>
+<p>Aside: the syntax <code>::&lt;i32&gt;</code> is Rust's &quot;turbofish&quot;. It explicitly binds a type parameter of a polymorphic function, rather than leaving it to be inferred. <a href="https://stackoverflow.com/questions/52360464/what-is-the-syntax-instance-methodsomething/52361559">Further</a> <a href="https://matematikaadit.github.io/posts/rust-turbofish.html">explanation</a> <a href="https://techblog.tonsser.com/posts/what-is-rusts-turbofish">here</a>.</p>
+</blockquote>
+<p>Then we insert a value <code>1</code> at the key <code>TypeId::of::&lt;i32&gt;()</code>. We can also implement <code>has</code> and <code>get</code> functions:</p>
+<pre><code class="language-rust ignore">impl TypeMap {
+  pub fn has&lt;T: Any + 'static&gt;(&amp;self) -&gt; bool {
+    self.0.contains_key(&amp;TypeId::of::&lt;T&gt;())
+  }
+
+  pub fn get_mut&lt;T: Any + 'static&gt;(&amp;mut self) -&gt; Option&lt;&amp;mut T&gt; {
+    self.0.get_mut(&amp;TypeId::of::&lt;T&gt;()).map(|t| {
+      t.downcast_mut::&lt;T&gt;().unwrap()
+    })
+  }
+}
+</code></pre>
+<p>Look carefully at <code>get_mut</code>. The inner hash map returns a value of type <code>Box&lt;dyn Any&gt;</code>, which we can <code>downcast_mut</code> to become a value of type <code>&amp;mut T</code>. This operation is guaranteed to not fail, because only values of type <code>T</code> are stored in the hash map under the key for <code>T</code>.</p>
+<h3><a class="header" href="#implementing-the-event-system" id="implementing-the-event-system">Implementing the event system</a></h3>
+<p>With the <code>TypeMap</code> in hand, we can finish our event system. For the <code>EventRegistry</code>, the <code>TypeMap</code> will map from events to a vector of listeners.</p>
+<pre><code class="language-rust ignore">struct EventDispatcher(TypeMap);
+type ListenerVec&lt;E&gt; = Vec&lt;Box&lt;dyn EventListener&lt;E&gt;&gt;&gt;;
+
+impl EventDispatcher {
+  fn add_event_listener&lt;E&gt;(&amp;mut self, f: impl EventListener&lt;E&gt;) {
+    if !self.0.has::&lt;ListenerVec&lt;E&gt;&gt;() {
+      self.0.set::&lt;ListenerVec&lt;E&gt;&gt;(Vec::new());
+    }
+
+    let listeners = self.0.get_mut::&lt;ListenerVec&lt;E&gt;&gt;().unwrap();
+    listeners.push(Box::new(f));
+  }
+
+  fn trigger&lt;E&gt;(&amp;self, event: &amp;E) {
+    if let Some(listeners) = self.0.get::&lt;ListenerVec&lt;E&gt;&gt;() {
+      for callback in listeners {
+        callback(event);
+      }
+    }
+  }
+}
+</code></pre>
+<p>Returning to our API design goals, this design enforces consistency between related elements: an event listener's payload must match the event it's registered to.</p>
+<h2><a class="header" href="#2-type-safe-dependency-injection" id="2-type-safe-dependency-injection">2. Type-safe dependency injection</a></h2>
+<p>We'll walk through another example of using type registries to avoid unsafe string-based design. The basic idea of dependency injection (DI) is that you have a component that depends on another, like a web server using a database. However, you don't want to hard-code a particular database constructor, and rather make it easy to swap in different databases. For example:</p>
+<pre><code class="language-rust ignore">trait Database {
+  fn name(&amp;self) -&gt; &amp;'static str;
+}
+
+struct MySQL;
+impl Database for MySQL {
+  fn name(&amp;self) -&gt; &amp;'static str { &quot;MySQL&quot; }
+}
+
+struct Postgres;
+impl Database for Postgres {
+  fn name(&amp;self) -&gt; &amp;'static str { &quot;Postgres&quot; }
+}
+
+struct WebServer { db: Box&lt;dyn Database&gt; }
+impl WebServer {
+  fn run(&amp;self) {
+    println!(&quot;Db name: {}&quot;, self.db.name());
+  }
+}
+</code></pre>
+<p>To implement DI, we need two things:</p>
+<ul>
+<li>We need a way to register a global <code>Database</code> at runtime to a particular instance, e.g. <code>MySQL</code> or <code>Postgres</code>.</li>
+<li>We need a way to describe a constructor for <code>WebServer</code> that fetches the registered <code>Database</code> instance.</li>
+</ul>
+<p>With these pieces, we can use our DI system like so:</p>
+<pre><code class="language-rust ignore">let mut manager = DIManager::new();
+manager.build::&lt;MySQL&gt;().unwrap();
+let server = manager.build::&lt;WebServer&gt;().unwrap();
+server.lock().unwrap().run(); // prints Db name: MySQL
+</code></pre>
+<h3><a class="header" href="#di-constructors" id="di-constructors">DI constructors</a></h3>
+<p>First, we'll define a trait <code>DIBuilder</code> that represents a constructor within our DI system.</p>
+<pre><code class="language-rust ignore">trait DIBuilder {
+  type Input;
+  type Output;
+
+  fn build(input: Self::Input) -&gt; Self::Output;
+}
+</code></pre>
+<p>The <code>build</code> method is a static method (doesn't take <code>self</code> as input). It just takes <code>Input</code> as input, and produces <code>Output</code> as output. The key idea is that because <code>Input</code> and <code>Output</code> are <a href="https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#specifying-placeholder-types-in-trait-definitions-with-associated-types">associated types</a>, we can inspect them later on. We will need to find values for <code>Input</code> and to store <code>Output</code> in our DI manager.</p>
+<p>We implement <code>DIBuilder</code> for each type in the system. The databases have no inputs, so their input is <code>()</code>. Their return type is <code>Box&lt;dyn Database&gt;</code>, meaning they are explicitly cast to a trait object so they can be used interchangeably.</p>
+<pre><code class="language-rust ignore">impl DIBuilder for MySQL {
+  type Input = ();
+  type Output = Box&lt;dyn Database&gt;;
+  fn build((): ()) -&gt; Box&lt;dyn Database&gt; {
+    Box::new(MySQL)
+  }
+}
+
+impl DIBuilder for Postgres {
+  type Input = ();
+  type Output = Box&lt;dyn Database&gt;;
+  fn build((): ()) -&gt; Box&lt;dyn Database&gt; {
+    Box::new(Postgres)
+  }
+}
+
+impl DIBuilder for WebServer {
+  type Input = (Box&lt;dyn Database&gt;,);
+  type Output = WebServer;
+
+  fn build((db,): Self::Input) -&gt; WebServer {
+    WebServer { db }
+  }
+}
+</code></pre>
+<h3><a class="header" href="#di-manager" id="di-manager">DI manager</a></h3>
+<p>Now that we know the dependency structure of our objects, we need a centralized manager to store the objects and fetch their dependencies.</p>
+<pre><code class="language-rust ignore">struct DIManager(TypeMap);
+</code></pre>
+<p>In this <code>TypeMap</code>, we will store the constructed objects. For example, once we make a <code>Box&lt;dyn Database&gt;</code>, then we will map <code>TypeId::of::&lt;Box&lt;dyn Database&gt;&gt;</code> to one of <code>Box&lt;Postgres&gt;</code> or <code>Box&lt;MySQL&gt;</code>.</p>
+<pre><code class="language-rust ignore">impl DIManager {
+  fn build&lt;T: DIBuilder&gt;(&amp;mut self) -&gt; Option&lt;T::Output&gt; {
+    let input = /* get the inputs, somehow */;
+    let obj = T::build(input);
+    self.0.set::&lt;T::Output&gt;(obj);
+    Some(obj)
+  }
+}
+</code></pre>
+<p>Ignoring how we fetch dependencies for now, this function calls the <code>DIBuilder::build</code> implementation for <code>T</code>, then stores the result in the <code>TypeMap</code>. This approach <em>almost</em> works, except not for Rust: ownership of <code>obj</code> is passed into <code>TypeMap</code> and the result of <code>build</code>.</p>
+<p>And, intuitively, this makes sense. If a component like a database cursor needs to be shared across many downstream components, it needs some kind of access protection. Hence, we tweak our interface a bit to wrap everything in an <a href="https://doc.rust-lang.org/std/sync/struct.Arc.html"><code>Arc</code></a> and <a href="https://doc.rust-lang.org/std/sync/struct.Mutex.html"><code>Mutex</code></a>.</p>
+<pre><code class="language-rust ignore">type DIObj&lt;T&gt; = Arc&lt;Mutex&lt;T&gt;&gt;;
+
+impl DIManager {
+  fn build&lt;T: DIBuilder&gt;(&amp;mut self) -&gt; Option&lt;DIObj&lt;T::Output&gt;&gt; {
+    let input = /* get the inputs, somehow */;
+    let obj = T::build(input);
+    let sync_obj = Arc::new(Mutex::new(obj));
+    self.0.set::&lt;DIObj&lt;T::Output&gt;&gt;(sync_obj.clone());
+    Some(sync_obj)
+  }
+}
+</code></pre>
+<h3><a class="header" href="#di-dependencies" id="di-dependencies">DI dependencies</a></h3>
+<p>Finally, we need a way to implement the <code>let input</code> line in <code>DIManager::build</code>. Given a type <code>T: DIBuilder</code>, it has an associated type <code>T::Input</code> that represents the inputs needed to build it.</p>
+<p>To simplify the problem, imagine <code>T::Input = S</code> where <code>S: DIBuilder</code>. Then if <code>S</code> has already been built, e.g. <code>T = WebServer</code> and <code>S = Box&lt;dyn Database&gt;</code>, we can fetch it directly from the typemap:</p>
+<pre><code class="language-rust ignore">let input = self.0.get::&lt;T::Input&gt;().map(|obj| obj.clone())?;
+</code></pre>
+<p>However, in practice <code>T::Input</code> could be several dependencies. For example, if our server depends on a configuration, it might be:</p>
+<pre><code class="language-rust ignore">impl DIBuilder for WebServer {
+  type Input = (Box&lt;dyn Database&gt;, Box&lt;dyn ServerConfig&gt;);
+  type Output = WebServer;
+
+  fn build((db, config): Self::Input) -&gt; WebServer {
+    WebServer { db, config }
+  }
+}
+</code></pre>
+<p>Let's assume now <code>T::Input</code> is always a tuple <code>(S1, S2, ...)</code> of types where each type <code>Si : DIBuilder</code>. Ideally, we could write something like:</p>
+<pre><code class="language-rust ignore">let input = (T::Input).map(|S| {
+  self.0.get::&lt;S&gt;().map(|obj| obj.clone()).unwrap()
+});
+</code></pre>
+<p>But, alas, our language of expressions is not our language of types. Such a thing is the provenance of languages we can only <a href="https://leanprover.github.io/">dream about</a>. Instead, we have to cleverly use traits to inductively define a way to extract inputs from the tuple. To start, we'll make a trait that gets an object of a particular type from the <code>DIManager</code>:</p>
+<pre><code class="language-rust ignore">trait GetInput: Sized {
+  fn get_input(manager: &amp;DIManager) -&gt; Option&lt;Self&gt;;
+}
+</code></pre>
+<p>For <code>DIObj&lt;T&gt;</code>, this means looking up the type in the <code>TypeMap</code>:</p>
+<pre><code class="language-rust ignore">impl&lt;T: 'static&gt; GetInput for DIObj&lt;T&gt; {
+  fn get_input(manager: &amp;DIManager) -&gt; Option&lt;Self&gt; {
+    manager.0.get::&lt;Self&gt;().map(|obj| obj.clone())
+  }
+}
+</code></pre>
+<p>Then for tuples of <code>DIObj&lt;T&gt;</code>, we can make an inductive definition like so:</p>
+<pre><code class="language-rust ignore">impl GetInput for () {
+  fn get_input(_manager: &amp;DIManager) -&gt; Option&lt;Self&gt; {
+    Some(())
+  }
+}
+
+impl&lt;S: GetInput, T: GetInput&gt; GetInput for (S, T) {
+  fn get_input(manager: &amp;DIManager) -&gt; Option&lt;Self&gt; {
+    S::get_input(manager).and_then(|s| {
+      T::get_input(manager).and_then(|t| {
+        Some((s, t))
+      })
+    })
+  }
+}
+</code></pre>
+<p>Then we can modify our <code>WebServer</code> example to use an inductive structure:</p>
+<pre><code class="language-rust ignore">impl DIBuilder for WebServer {
+  type Input = (DIObj&lt;Box&lt;dyn Database&gt;&gt;,(DIObj&lt;Box&lt;dyn ServerConfig&gt;&gt;,()));
+  type Output = WebServer;
+
+  fn build((db, (config, ())): Self::Input) -&gt; WebServer {
+    WebServer { db, config }
+  }
+}
+</code></pre>
+<blockquote>
+<p>Aside: in practice, rather than doing nested pairs, you can use a macro to create the <code>GetInput</code> impl for many tuple types <a href="https://github.com/amethyst/shred/blob/0.10.2/src/system.rs#L438-L469">like this</a>.</p>
+</blockquote>
+<p>And at last, we can implement <code>DIManager::build</code>:</p>
+<pre><code class="language-rust ignore">impl DIManager {
+  pub fn build&lt;T: DIBuilder&gt;(&amp;mut self) -&gt; Option&lt;DIObj&lt;T::Output&gt;&gt; {
+    let input = T::Input::get_input(self)?;
+    let obj = T::build(input);
+    let sync_obj = Arc::new(Mutex::new(obj));
+    self.0.set::&lt;DIObj&lt;T::Output&gt;&gt;(sync_obj.clone());
+    Some(sync_obj)
+  }
+}
+</code></pre>
+<p>Now, the expression <code>T::Input::get_input(self)</code> will convert a tuple of types into a tuple of values of those types.</p>
+<h3><a class="header" href="#final-api-example" id="final-api-example">Final API example</a></h3>
+<p>With the API complete, our example now looks like this:</p>
+<pre><code class="language-rust ignore">let mut manager = DIManager::new();
+manager.build::&lt;MySQL&gt;().unwrap();
+let server = manager.build::&lt;WebServer&gt;().unwrap();
+server.lock().unwrap().run();
+</code></pre>
+<p>We can construct a <code>WebServer</code> without explicitly passing in a <code>dyn Database</code> instance. When we use the <code>server</code>, we have to explicitly call <code>.lock()</code> now that it's wrapped in a mutex. And lo, our dependencies have been injected.</p>
 
                     </main>
 

@@ -1,0 +1,383 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Parallel Lists - Rust API Type Patterns</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="main_idea.html"><strong aria-hidden="true">2.</strong> The Main Idea</a></li><li class="chapter-item expanded "><a href="access_control.html"><strong aria-hidden="true">3.</strong> Access Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="witnesses.html"><strong aria-hidden="true">3.1.</strong> Witnesses</a></li><li class="chapter-item expanded "><a href="guards.html"><strong aria-hidden="true">3.2.</strong> Guards</a></li></ol></li><li class="chapter-item expanded "><a href="state_machines.html"><strong aria-hidden="true">4.</strong> State Machines</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="typestate.html"><strong aria-hidden="true">4.1.</strong> Typestate</a></li><li class="chapter-item expanded "><a href="state_combinators.html"><strong aria-hidden="true">4.2.</strong> State Combinators</a></li></ol></li><li class="chapter-item expanded "><a href="parallel_lists.html" class="active"><strong aria-hidden="true">5.</strong> Parallel Lists</a></li><li class="chapter-item expanded "><a href="registries.html"><strong aria-hidden="true">6.</strong> Registries</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Rust API Type Patterns</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#parallel-lists" id="parallel-lists">Parallel Lists</a></h1>
+<p>Another common pattern in system design is to have two lists of pairwise-related (or &quot;parallel&quot;) elements. For example, consider <code>println</code>:</p>
+<pre><code class="language-rust ignore">println!(&quot;#{:03} {}: {}&quot;, id, user, message);
+</code></pre>
+<p>The first list is the format directives (e.g. <code>{}</code>) in the format string. The second list is the inputs (e.g. <code>id</code>) to <code>println!</code>. These lists must have the same length.</p>
+<p>As another example, consider routing in a web server:</p>
+<pre><code class="language-rust ignore">#[route(&quot;/user/:id/messages/:message_id&quot;)]
+fn user_message(id: Id, message_id: MessageId) {
+ /* .. /
+}
+</code></pre>
+<p>The first list is the routing variables (e.g. <code>:id</code>) and the second is the function parameters (e.g. <code>id: Id</code>). These lists must have the same length and corresponding types.</p>
+<p>I'll show you how to use <strong>heterogeneous lists</strong> (H-lists), or lists of values of different types, to implement APIs with parallel lists. Specifically, we will implement a type-safe printf. For a real-world example, you can check out how the <a href="https://docs.rs/warp/">warp framework</a> uses H-lists to do type-safe web routing.</p>
+<h2><a class="header" href="#core-mechanism-hlist" id="core-mechanism-hlist">Core mechanism: HList</a></h2>
+<p>First, we need to understand H-lists. An H-list is a sequence of values of potentially different types. For example, <code>[1, &quot;a&quot;, true]</code> is an H-list, but not a valid Rust vector. H-lists are implemented in Rust using a linked-list style:</p>
+<pre><code class="language-rust ignore">struct HNil;
+struct HCons&lt;Head, Tail&gt; {
+  head: Head,
+  tail: Tail
+}
+
+let example: HCons&lt;i32, HCons&lt;bool, HNil&gt;&gt; =
+  HCons{head: 1, tail: HCons{head: true, tail: HNil}};
+</code></pre>
+<p>The key idea is that the type of an H-list changes every time you make a change to it. By contrast, if you push to a <code>Vec&lt;T&gt;</code>, the type of the vector stays the same.</p>
+<p>Just like Rust has <code>vec![]</code>, we can use the <a href="https://github.com/lloydmeta/frunk#hlist">frunk</a> crate to get an <code>hlist!</code> macro.</p>
+<pre><code class="language-rust ignore">let example = hlist![1, true]; // same as above
+</code></pre>
+<h2><a class="header" href="#setting-up-printf" id="setting-up-printf">Setting up printf</a></h2>
+<p>Let's go back to the ingredients of printf. We need a format string and an argument list. The key idea is to represent both with an H-list, and carefully use Rust's traits to ensure our desired property: the number of arguments should match the number of holes.</p>
+<p>First, to represent format strings, we will have a sequence of structs that represent each part of the string.</p>
+<pre><code class="language-rust ignore">pub struct FString(&amp;'static str);
+pub struct FVar;
+
+// Assume that we compile &quot;Hello {}! The first prime is {}&quot; into this code.
+// That would be a simple syntactic transformation.
+let example = hlist![
+  FString(&quot;Hello &quot;), FVar, FString(&quot;! The first prime is &quot;), FVar
+];
+</code></pre>
+<p>To represent arguments, we will use a matching H-list of values. For example:</p>
+<pre><code class="language-rust ignore">let args = hlist![&quot;world&quot;, 2];
+</code></pre>
+<p>Then, our goal is to create a function <code>format</code> such that this is true:</p>
+<pre><code class="language-rust ignore">assert_eq!(
+  example.format(args),
+  &quot;Hello world! The first prime is 2&quot;
+);
+</code></pre>
+<p>And this should be a compile-time (NOT run-time) error:</p>
+<pre><code class="language-rust ignore">example.format(hlist![&quot;Only one arg&quot;]);
+</code></pre>
+<h2><a class="header" href="#the-format-trait" id="the-format-trait">The Format trait</a></h2>
+<p>First, we need to define the signature of our <code>format</code> function.</p>
+<pre><code class="language-rust ignore">trait Format&lt;ArgList&gt; {
+  fn format(&amp;self, args: ArgList) -&gt; String;
+}
+</code></pre>
+<p>Here, <code>self</code> is the H-list of the format directives, and <code>ArgList</code> is the H-list of the variadic arguments. <code>Format</code> need to take <code>ArgList</code> as a type parameter, because its type will change as we remove elements from the <code>ArgList</code> list.</p>
+<p>Now, we proceed to implement the <code>Format</code> trait by cases. First, the base case for reaching the end of the format list <code>HNil</code>:</p>
+<pre><code class="language-rust ignore">impl Format&lt;HNil&gt; for HNil {
+  fn format(&amp;self, _args: HNil) -&gt; String {
+    &quot;&quot;.to_string()
+  }
+}
+</code></pre>
+<p>This impl says that when we reach the end of a format list, just return the empty string. And the only argument we will accept is an empty argument list. Combined with the next impls, this inductively ensures that extra arguments are not accepted.</p>
+<p>Next, we will implement <code>FString</code>. This implementation should use the string constant contained in the <code>FString</code> struct, and combine it recursively with the rest of the format list. We don't use variadic arguments for <code>FString</code>, so they get passed along. In Rust, this English specification becomes:</p>
+<pre><code class="language-rust ignore">impl&lt;ArgList, FmtList&gt; Format&lt;ArgList&gt;
+for HCons&lt;FString, FmtList&gt;
+where FmtList: Format&lt;ArgList&gt;
+{
+  fn format(&amp;self, args: ArgList) -&gt; String {
+    self.head.0.to_owned() + &amp;self.tail.format(args)
+  }
+}
+</code></pre>
+<p>Note that we have to add <code>FmtList: Format&lt;ArgList&gt;</code> to ensure the recursive call to <code>self.tail.format</code> works. Also note that we aren't implementing <code>Format</code> directly on <code>FString</code>, but rather on an H-list containing <code>FString</code>.</p>
+<p>Finally, the most complex case, <code>FVar</code>. We want this impl to take an argument from the <code>ArgList</code>, then format the remaining format list with the remaining arguments.</p>
+<pre><code class="language-rust ignore">impl&lt;T, ArgList, FmtList&gt; Format&lt;HCons&lt;T, ArgList&gt;&gt;
+for HCons&lt;FVar, FmtList&gt;
+where
+  FmtList: Format&lt;ArgList&gt;,
+  T: ToString,
+{
+  fn format(&amp;self, args: HCons&lt;T, ArgList&gt;) -&gt; String {
+    args.head.to_string() + &amp;self.tail.format(args.tail)
+  }
+}
+</code></pre>
+<p>Be careful to observe which H-list is being accessed by <code>head</code> and <code>tail</code>. Here, the <code>args</code> H-list provides the data to fill the hole via <code>args.head</code>.</p>
+<h2><a class="header" href="#checking-our-properties" id="checking-our-properties">Checking our properties</a></h2>
+<p>With this implementation, our correct example successfully compiles and runs:</p>
+<pre><code class="language-rust ignore">let example = hlist![
+  FString(&quot;Hello &quot;), FVar, FString(&quot;! The first prime is &quot;), FVar
+];
+assert_eq!(
+  example.format(hlist![&quot;world&quot;, 2]),
+  &quot;Hello world! The first prime is 2&quot;
+);
+</code></pre>
+<p>What about our incorrect example? If we write this:</p>
+<pre><code class="language-rust ignore">example.format(hlist![&quot;just one arg&quot;]);
+</code></pre>
+<p>This code fails to compile with the error:</p>
+<pre><code class="language-ignore">error[E0308]: mismatched types
+  --&gt; src/printf.rs:48:18
+   |
+48 |   example.format(hlist![&quot;just one arg&quot;]);
+   |                  ^^^^^^^^^^^^^^^^^^^^^^
+   |                  expected struct `Cons`, found struct `HNil`
+   |
+   = note: expected struct `HCons&lt;_, HNil&gt;`
+              found struct `HNil`
+</code></pre>
+<p>While the error is enigmatic, our mistake is at least correctly caught at compile-time. This is because Rust deduces that <code>example.format()</code> expects an H-list of the shape <code>HCons&lt;_, HCons&lt;_, HNil&gt;&gt;</code>, but it finds <code>HNil</code> too soon in our 1-element H-list. A similar error occurs when providing too many args.</p>
+<p>Stupendous! We have successfully implemented a type-safe printf using H-lists and traits.</p>
+<h2><a class="header" href="#extending-our-abstraction" id="extending-our-abstraction">Extending our abstraction</a></h2>
+<p>Right now, our <code>Format</code> function just checks that the format list and argument list are the same length. We could extend our format structures, for example to ensure that an <code>FVar</code> must be a particular type, or must use <code>Debug</code> vs. <code>Display</code>. Here's the sketch of such a strategy:</p>
+<pre><code class="language-rust ignore">use std::marker::PhantomData;
+
+// Add flags for whether using Display or Debug
+pub struct FDisplay;
+pub struct FDebug;
+
+// Use a type parameter with PhantomData to represent the intended type
+pub struct FVar&lt;T, Flag&gt;(PhantomData&lt;(T, Flag)&gt;);
+
+// Now, T has to be the same between the format list and arg list
+// Also, FDisplay flag requires that `T: Display`
+impl&lt;T, ArgList, FmtList&gt; Format&lt;HCons&lt;T, ArgList&gt;&gt;
+for HCons&lt;FVar&lt;T, FDisplay&gt;, FmtList&gt;
+where
+  FmtList: Format&lt;ArgList&gt;,
+  T: Display,
+{
+  fn format(&amp;self, args: HCons&lt;T, ArgList&gt;) -&gt; String {
+    // using format! is cheating, but you get the idea
+    format!(&quot;{}&quot;, args) + &amp;self.tail.format(args.tail)
+  }
+}
+
+// Similar impl for `T: Debug` when `FDebug` is used
+</code></pre>
+<p>With this approach, if our format list and arg list differ in type:</p>
+<pre><code class="language-rust ignore">let fmt = hlist![FString(&quot;n: &quot;), FVar::&lt;i32, FDisplay&gt;(PhantomData)];
+fmt.format(hlist![&quot;not a number&quot;]);
+</code></pre>
+<p>Then the code will not compile with the error, <code>&amp;'static str is not i32</code>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="state_combinators.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="registries.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="state_combinators.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="registries.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
