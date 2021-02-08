@@ -1,6 +1,40 @@
 # The Main Idea
 
-An API is a computational representation of real-world concepts, and **a good API has a small distance between the representation and the concept**. This begs the question: what defines such a distance?
+An API is a computational **representation** of real-world concepts. Representations are mappings between elements of a represented world (e.g. real life) and a representing world (e.g. an API). For example, the height of a person can be represented in many ways:
+
+<center>
+    <img src="./images/representation_height.png" width="90%" /><br />
+    <i>Rumelhart and Norman, <a href="https://apps.dtic.mil/sti/pdfs/ADA130662.pdf">Representation in Memory</a>. 1983</i>
+</center>
+
+More abstract concepts, like natural numbers, also have many representations:
+
+<center>
+    <img src="./images/representation_number_table.png" width="90%" /><br />
+    <i>Zhang and Norman, <a href="https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf">A Representational Analysis of Numeration Systems</a>. 1996</i>
+</center>
+
+As an API designer, your goal is to pick a representation that best supports its intended tasks. For example, a number representation should make it easy to add and multiply two numbers.
+
+A skilled API designer can design representations _systematically_, understanding the structure of representations that makes tasks easier or harder. For example, numbers can be categorized along a few dimensions:
+
+<center>
+    <img src="./images/representation_number_diagram.png" width="90%" /><br />
+    <i>Zhang and Norman, <a href="https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf">A Representational Analysis of Numeration Systems</a>. 1996</i>
+</center>
+
+Using this taxonomy, we can understand that all 1D systems (like tally marks) make addition easier, because addition reduces to concatenating strings (e.g. II + I = III). However, 1x1D systems (like Arabic numerals) make multiplication easier &mdash; see [the paper](https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf) for why.
+
+Summarizing the main points:
+1. Representations map elements of one domain to another.
+2. Representations make tasks easier or harder based on their design.
+3. Representational principles can be applied to design better representations.
+
+In this book, my goal is to show you how representational principles can be used to improve API design. That is, when you map the real world to an API, how can you help API clients be more productive and avoid mistakes?
+
+> _Aside:_ if you're interested in learning more about representation theory in cognitive psychology, I strongly recommend [Things That Make Us Smart](https://www.amazon.com/Things-That-Make-Smart-Attributes-ebook/dp/B00QFJHP94) by Don Norman.
+
+<!-- and **a good API has a small distance between the representation and the concept**. This begs the question: what defines such a distance? -->
 
 ## Principles of representation: cardinality mismatch
 

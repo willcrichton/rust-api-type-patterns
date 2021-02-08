@@ -36,6 +36,12 @@ Specifically, errors could happen either for a API client or the API author:
 * **For a API client,** the `color` parameter in the first example is an dynamically-typed (or "stringly-typed") abstraction because the compiler cannot verify whether a call to `color_to_rgb_bad` will always contain one of the three strings. By contrast, in `color_to_rgb_good`, the input is guaranteed to be one of the enum values. Consequently, the `Option` is removed from the type signature because the method can no longer fail.
 * **For the API author,** the compiler does not enforce that the implementation of `color_to_rgb_bad` matches on the strings intended by the author. If they wrote `"Rod"` instead of `"Red"`, the error would only arise in a unit test or client bug report. By contrast, the compiler enforces that each enum variants must be one of the three enum values.
 
+> _Aside:_ what if you need to take `&str` as input, e.g. from a user at the command line? Then don't try to accomplish two things in one function. Define a separate function:
+> ```rust,ignore
+> fn parse(input: &str) -> Option<PrimaryColor>
+> ```
+> Check out ["Parse, don't validate"](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/) for more on this.
+
 ## Book structure
 
 The remainder of the book is structured much like the example above. Each chapter follows the pattern:
