@@ -1,13 +1,6 @@
 # The Main Idea
 
-An API is a computational **representation** of real-world concepts. Representations are mappings between elements of a represented world (e.g. real life) and a representing world (e.g. an API). For example, the height of a person can be represented in many ways:
-
-<center>
-    <img src="./images/representation_height.png" width="90%" /><br />
-    <i>Rumelhart and Norman, <a href="https://apps.dtic.mil/sti/pdfs/ADA130662.pdf">Representation in Memory</a>. 1983</i>
-</center>
-
-More abstract concepts, like natural numbers, also have many representations:
+An API is a computational **representation** of real-world concepts. Representations are mappings between elements of a represented world (e.g. real life) and a representing world (e.g. an API). For example, the abstract concept of a number can be expressed through many notations (or interfaces):
 
 <center>
     <img src="./images/representation_number_table.png" width="90%" /><br />
@@ -20,19 +13,14 @@ A skilled API designer can design representations _systematically_, understandin
 
 <center>
     <img src="./images/representation_number_diagram.png" width="90%" /><br />
-    <i>Zhang and Norman, <a href="https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf">A Representational Analysis of Numeration Systems</a>. 1996</i>
 </center>
 
 Using this taxonomy, we can understand that all 1D systems (like tally marks) make addition easier, because addition reduces to concatenating strings (e.g. II + I = III). However, 1x1D systems (like Arabic numerals) make multiplication easier &mdash; see [the paper](https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf) for why.
 
-Summarizing the main points:
-1. Representations map elements of one domain to another.
-2. Representations make tasks easier or harder based on their design.
-3. Representational principles can be applied to design better representations.
+
+> If you're interested in learning more about representation theory in cognitive psychology, I strongly recommend [Things That Make Us Smart](https://www.amazon.com/Things-That-Make-Smart-Attributes-ebook/dp/B00QFJHP94) by Don Norman.
 
 In this book, my goal is to show you how representational principles can be used to improve API design. That is, when you map the real world to an API, how can you help API clients be more productive and avoid mistakes?
-
-> _Aside:_ if you're interested in learning more about representation theory in cognitive psychology, I strongly recommend [Things That Make Us Smart](https://www.amazon.com/Things-That-Make-Smart-Attributes-ebook/dp/B00QFJHP94) by Don Norman.
 
 <!-- and **a good API has a small distance between the representation and the concept**. This begs the question: what defines such a distance? -->
 
@@ -43,7 +31,7 @@ Consider the example from the last chapter. We want to define a data type that r
 ```rust,ignore
 fn color_to_rgb_bad(color: &str) // ...
 
-enum PrimaryColor { Red, Green, Blue }
+enum PrimaryColor { Red, Yellow, Blue }
 fn color_to_rgb_good(color: PrimaryColor) // ..
 ```
 
@@ -78,6 +66,8 @@ This main idea of this book is a principle of representation: **consistency betw
 * In an event listener, the event name (e.g. `"click"`) must be consistent with the event parameters (e.g. `mousex`).
 * In a state machine, the machine's state (e.g. `FileOpen`) must be consistent with the set of actions permissible on the machine (e.g. `.close()`).
 * In a function with variadic arguments, the order of arguments (e.g. `route("/:user/:message")`) must be consistent with the order of usage (e.g. `|u: User, m: Message|`).
+
+> Another way of interpreting this principle is "when multiple components must agree on aspects of an entity", which is known as [connascence](https://practicingruby.com/articles/connascence).
 
 Enforcing consistency is often easier in a **closed system**, where every piece is defined and no further ones can be added. For example, consider an (inefficient) event system with a fixed set of events:
 

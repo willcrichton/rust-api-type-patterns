@@ -95,7 +95,7 @@ Again, our main idea returns: **consistency between related elements.** Our witn
 
 Instead of a `MutexIsLocked` witness, we will use a **guard**: a data structure that both proves a property (a mutex is locked) _and_ mediates access to data (the mutex's `T`). The idea is that calling `Mutex::lock` will return a `MutexGuard` which manages the system mutex in its constructor and destructor, and it provides access to the inner `T`.
 
-```rust, ignore
+```rust,ignore
 struct MutexGuard<'a, T> {
   lock: &'a Mutex<T>
 }
@@ -146,3 +146,36 @@ Thise API now enforces both access control and cleanup:
 2. **Cleanup:** only after all borrows to `T` have ended will `MutexGuard` be dropped, which then automatically unlocks the system mutex. The API client cannot possibly forget or unlock in the wrong order.
 
 For more examples, this pattern is used throughout the standard library: [`Mutex<T>`](https://doc.rust-lang.org/stable/std/sync/struct.Mutex.html), [`RwLock<T>`](https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html), and [`RefCell<T>`](https://doc.rust-lang.org/stable/std/cell/struct.RefCell.html).
+
+
+## Closure guards
+
+A variant on the guard design uses closures rather than guard structs. For example, a closure-based mutex:
+
+```rust
+struct Mutex<T> { /* same as before */ }
+
+impl<T> Mutex<T> {
+  pub fn lock(&self, f: impl FnMut(&mut T)) {
+    self.system_mutex.lock();
+    f(&mut self.t.get());
+    self.system_mutex.unlock();
+  }
+}
+
+fn main() {
+  let mtx = Mutex::new(1);
+  mtx.lock(|n| {
+    *n = 1;
+  });
+
+  mtx.lock(|n| {
+    *n = 2;
+  });
+}
+```
+
+The use of closures enables an API to:
+1. Execute code at the right time (after the lock is taken)
+2. Pass the protected data to the code for a limited duration (`&mut T`)
+3. Regain control and cleanup after execution (unlocking the lock)

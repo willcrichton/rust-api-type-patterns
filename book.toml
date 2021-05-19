@@ -3,4 +3,4 @@ authors = ["Will Crichton"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Rust API Type Patterns"
+title = "Type-Driven API Design in Rust"
