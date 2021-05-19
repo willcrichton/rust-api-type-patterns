@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Witnesses - Rust API Type Patterns</title>
+        <title>Witnesses - Type-Driven API Design in Rust</title>
         
         
 
@@ -127,7 +127,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">Rust API Type Patterns</h1>
+                    <h1 class="menu-title">Type-Driven API Design in Rust</h1>
 
                     <div class="right-buttons">
                         
@@ -136,13 +136,15 @@
                         </a>
                         
                         
+                        
+
                     </div>
                 </div>
 
                 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -163,7 +165,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#witnesses" id="witnesses">Witnesses</a></h1>
+                        <h1 id="witnesses"><a class="header" href="#witnesses">Witnesses</a></h1>
 <p>Let's say we're designing a website with a panel that only admins can access. A naive approach relies on enforcing access control by convention:</p>
 <pre><code class="language-rust ignore">/// IMPORTANT: Only call this function when logged in as admin!
 fn render_admin_panel() -&gt; Html {

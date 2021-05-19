@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Guards - Rust API Type Patterns</title>
+        <title>Guards - Type-Driven API Design in Rust</title>
         
         
 
@@ -127,7 +127,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">Rust API Type Patterns</h1>
+                    <h1 class="menu-title">Type-Driven API Design in Rust</h1>
 
                     <div class="right-buttons">
                         
@@ -136,13 +136,15 @@
                         </a>
                         
                         
+                        
+
                     </div>
                 </div>
 
                 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -163,7 +165,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#guards" id="guards">Guards</a></h1>
+                        <h1 id="guards"><a class="header" href="#guards">Guards</a></h1>
 <p>Recall that witnesses are proofs of properties, like being a website admin. In the witness pattern, the actual value (e.g. <code>admin: Admin</code>) may not actually be used at runtime — its presence is purely for statically enforcing access control. When using witnesses, the API designer must carefully ensure that every time a piece of code makes an assumption (e.g. user is an admin), that the code has access to a corresponding witness.</p>
 <p>An alternative approach is to <strong>associate a witness with its runtime capabilities.</strong> To dig into that statement, we'll use the running example of a <code>Mutex&lt;T&gt;</code> that protects a value of type <code>T</code> given a <code>SystemMutex</code> (e.g. <a href="http://www.cs.kent.edu/%7Eruttan/sysprog/lectures/multi-thread/pthread_mutex_init.html">pthread_mutex</a>). Recall that a mutex should satisfy the following design goals:</p>
 <ol>
@@ -202,7 +204,7 @@ fn main() {
 }
 </code></pre>
 <p>This API nominally enforces access control via encapsulation: the only way to access <code>T</code> is by calling <code>lock</code>, which ensures that <code>SystemMutex::lock</code> is called. However, the issue is that there is no mechanism which relates the lifetime of <code>&amp;mut T</code> to the lifetime of the lock on the system mutex. So an API client could forget to call <code>Mutex::unlock</code> which violates the cleanup design goal. Or worse, an API client could call <code>Mutex::unlock</code> <em>too early</em> which would allow other threads to access <code>T</code> simultaneously, violating the access control design goal.</p>
-<h2><a class="header" href="#witness-approach" id="witness-approach">Witness approach</a></h2>
+<h2 id="witness-approach"><a class="header" href="#witness-approach">Witness approach</a></h2>
 <p>How could we try to solve this problem with a witness? One possible approach is to return a witness to a mutex being locked, and use that witness to mediate access and cleanup.</p>
 <pre><code class="language-rust ignore">struct MutexIsLocked;
 
@@ -246,7 +248,7 @@ fn main() {
 <li>Nothing relates the <code>MutexIsLocked</code> witness to the mutex it came from. You could create two unrelated mutexes, and pass the witness from one into the other.</li>
 </ol>
 <p>Again, our main idea returns: <strong>consistency between related elements.</strong> Our witness-based API does not ensure that access to the mutex's data is consistent with access to the witness of the locked mutex.</p>
-<h2><a class="header" href="#guard-approach" id="guard-approach">Guard approach</a></h2>
+<h2 id="guard-approach"><a class="header" href="#guard-approach">Guard approach</a></h2>
 <p>Instead of a <code>MutexIsLocked</code> witness, we will use a <strong>guard</strong>: a data structure that both proves a property (a mutex is locked) <em>and</em> mediates access to data (the mutex's <code>T</code>). The idea is that calling <code>Mutex::lock</code> will return a <code>MutexGuard</code> which manages the system mutex in its constructor and destructor, and it provides access to the inner <code>T</code>.</p>
 <pre><code class="language-rust ignore">struct MutexGuard&lt;'a, T&gt; {
   lock: &amp;'a Mutex&lt;T&gt;
@@ -298,6 +300,35 @@ fn main() {
 <li><strong>Cleanup:</strong> only after all borrows to <code>T</code> have ended will <code>MutexGuard</code> be dropped, which then automatically unlocks the system mutex. The API client cannot possibly forget or unlock in the wrong order.</li>
 </ol>
 <p>For more examples, this pattern is used throughout the standard library: <a href="https://doc.rust-lang.org/stable/std/sync/struct.Mutex.html"><code>Mutex&lt;T&gt;</code></a>, <a href="https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html"><code>RwLock&lt;T&gt;</code></a>, and <a href="https://doc.rust-lang.org/stable/std/cell/struct.RefCell.html"><code>RefCell&lt;T&gt;</code></a>.</p>
+<h2 id="closure-guards"><a class="header" href="#closure-guards">Closure guards</a></h2>
+<p>A variant on the guard design uses closures rather than guard structs. For example, a closure-based mutex:</p>
+<pre><pre class="playground"><code class="language-rust">struct Mutex&lt;T&gt; { /* same as before */ }
+
+impl&lt;T&gt; Mutex&lt;T&gt; {
+  pub fn lock(&amp;self, f: impl FnMut(&amp;mut T)) {
+    self.system_mutex.lock();
+    f(&amp;mut self.t.get());
+    self.system_mutex.unlock();
+  }
+}
+
+fn main() {
+  let mtx = Mutex::new(1);
+  mtx.lock(|n| {
+    *n = 1;
+  });
+
+  mtx.lock(|n| {
+    *n = 2;
+  });
+}
+</code></pre></pre>
+<p>The use of closures enables an API to:</p>
+<ol>
+<li>Execute code at the right time (after the lock is taken)</li>
+<li>Pass the protected data to the code for a limited duration (<code>&amp;mut T</code>)</li>
+<li>Regain control and cleanup after execution (unlocking the lock)</li>
+</ol>
 
                     </main>
 

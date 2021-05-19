@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Typestate - Rust API Type Patterns</title>
+        <title>Typestate - Type-Driven API Design in Rust</title>
         
         
 
@@ -127,7 +127,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">Rust API Type Patterns</h1>
+                    <h1 class="menu-title">Type-Driven API Design in Rust</h1>
 
                     <div class="right-buttons">
                         
@@ -136,13 +136,15 @@
                         </a>
                         
                         
+                        
+
                     </div>
                 </div>
 
                 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -163,7 +165,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#typestate" id="typestate">Typestate</a></h1>
+                        <h1 id="typestate"><a class="header" href="#typestate">Typestate</a></h1>
 <p>Let's say we're implementing an API for a read-only file. It should adhere to the following state machine:</p>
 <center>
 <svg width="562" height="195" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -223,7 +225,7 @@ fn main() {
 }
 </code></pre>
 <p>The key question for this API: how does it prevent calling <code>read()</code> in an EOF state? Here, the answer is: it doesn't. Rather, calling <code>read()</code> after EOF is a <strong>runtime error</strong>, represented by the <code>None</code> branch of the <code>Option</code> type. The state machine is only contained internally (<code>reached_eof</code>).</p>
-<h2><a class="header" href="#representing-states-as-structs" id="representing-states-as-structs">Representing states as structs</a></h2>
+<h2 id="representing-states-as-structs"><a class="header" href="#representing-states-as-structs">Representing states as structs</a></h2>
 <p>Let's say the goal is to prevent the user from <em>ever</em> calling <code>read()</code> in an EOF state. That is, the call to <code>f.read()</code> after the <code>while let</code> <em>should not compile in the first place</em>. Now we arrive at the concept of <strong>typestate</strong>: encoding the states of the state machine into the type system.</p>
 <pre><code class="language-rust ignore">// 1. Each state is its own struct
 struct ReadingFile { inner: File }
@@ -280,7 +282,7 @@ fn main() {
 <li><strong>Each state has only its transitions implemented:</strong> the <code>read()</code> method is implemented for <code>ReadingFile</code>, but not for <code>EofFile</code>, while both can call <code>close()</code>.</li>
 <li><strong>Transitions between states consume ownership:</strong> the <code>read()</code> method consumes <code>ReadingFile</code> and returns whichever state comes after. This prevents calling methods on an old state.</li>
 </ol>
-<h2><a class="header" href="#moving-states-into-a-type-parameter" id="moving-states-into-a-type-parameter">Moving states into a type parameter</a></h2>
+<h2 id="moving-states-into-a-type-parameter"><a class="header" href="#moving-states-into-a-type-parameter">Moving states into a type parameter</a></h2>
 <p>One ugliness in this design is that the user has to manage a single logical object (the file) but split into multiple actual types (the states). An alternative design is to represent states as a <strong>type parameter</strong> to a single object, like so:</p>
 <pre><code class="language-rust ignore">struct Reading;
 struct Eof;
@@ -318,7 +320,7 @@ impl File2&lt;Eof&gt; {
 }
 </code></pre>
 <p>The API is largely the same, and the usage example from before still works. But on the implementation side, we now have to carry around this <a href="https://doc.rust-lang.org/std/marker/struct.PhantomData.html"><code>PhantomData</code></a> marker or else Rust complains about an unused type parameter.</p>
-<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<h2 id="further-reading"><a class="header" href="#further-reading">Further reading</a></h2>
 <ul>
 <li><a href="https://stanford-cs242.github.io/f19/lectures/08-2-typestate">Stanford CS 242 - Typestate</a></li>
 <li><a href="https://yoric.github.io/post/rust-typestate/">Typestates in Rust</a></li>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Rust API Type Patterns</title>
+        <title>Introduction - Type-Driven API Design in Rust</title>
         
         
 
@@ -127,7 +127,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">Rust API Type Patterns</h1>
+                    <h1 class="menu-title">Type-Driven API Design in Rust</h1>
 
                     <div class="right-buttons">
                         
@@ -136,13 +136,15 @@
                         </a>
                         
                         
+                        
+
                     </div>
                 </div>
 
                 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -163,18 +165,21 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#rust-api-type-patterns" id="rust-api-type-patterns">Rust API Type Patterns</a></h1>
+                        <h1 id="type-driven-api-design-in-rust"><a class="header" href="#type-driven-api-design-in-rust">Type-Driven API Design in Rust</a></h1>
 <p>This book is for people who are writing APIs in Rust. In particular, APIs that involve complex abstractions: variadics, state machines, extensible architectures, and so on.</p>
-<p><strong>The central theme is how to enforce API invariants by replacing dynamically-typed abstractions with statically-typed ones.</strong></p>
-<h2><a class="header" href="#a-prototypical-example-enums-over-strings" id="a-prototypical-example-enums-over-strings">A prototypical example: enums over strings</a></h2>
-<p>A basic example of this theme is using enums to represent a finite set of options, rather than a string. Imagine trying to convert a description of a color to an RGB tuple. This API design is error-prone:</p>
+<p><strong>The central theme is how to enforce API design by replacing dynamically-typed abstractions with statically-typed ones.</strong></p>
+<blockquote>
+<p>To understand this book's content, you should be familiar with Rust's core features: ownership, generics, traits, closures — anything covered in <a href="https://doc.rust-lang.org/book/">TRPL</a>.</p>
+</blockquote>
+<h2 id="a-prototypical-example-enums-over-strings"><a class="header" href="#a-prototypical-example-enums-over-strings">A prototypical example: enums over strings</a></h2>
+<p>A basic example of this theme is using enums to represent a finite set of options, rather than a string. Imagine trying to convert a description of a primary color to an RGB tuple. This API design is error-prone:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn color_to_rgb_bad(color: &amp;str) -&gt; Option&lt;(u8, u8, u8)&gt; {
   match color {
     &quot;Red&quot; =&gt; Some((255, 0, 0)),
-    &quot;Green&quot; =&gt; Some((0, 255, 0)),
+    &quot;Yellow&quot; =&gt; Some((255, 255, 0)),
     &quot;Blue&quot; =&gt; Some((0, 0, 255)),
     _ =&gt; None
   }
@@ -185,11 +190,11 @@
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>enum PrimaryColor { Red, Green, Blue }
+</span>enum PrimaryColor { Red, Yellow, Blue }
 fn color_to_rgb_good(color: PrimaryColor) -&gt; (u8, u8, u8) {
   match color {
     PrimaryColor::Red =&gt; (255, 0, 0),
-    PrimaryColor::Green =&gt; (0, 255, 0),
+    PrimaryColor::Yellow =&gt; (255, 255, 0),
     PrimaryColor::Blue =&gt; (0, 0, 255)
   }
 }
@@ -201,17 +206,17 @@ fn color_to_rgb_good(color: PrimaryColor) -&gt; (u8, u8, u8) {
 <li><strong>For the API author,</strong> the compiler does not enforce that the implementation of <code>color_to_rgb_bad</code> matches on the strings intended by the author. If they wrote <code>&quot;Rod&quot;</code> instead of <code>&quot;Red&quot;</code>, the error would only arise in a unit test or client bug report. By contrast, the compiler enforces that each enum variants must be one of the three enum values.</li>
 </ul>
 <blockquote>
-<p><em>Aside:</em> what if you need to take <code>&amp;str</code> as input, e.g. from a user at the command line? Then don't try to accomplish two things in one function. Define a separate function:</p>
+<p>What if you need to take <code>&amp;str</code> as input, e.g. from a user at the command line? Then don't try to accomplish two things in one function. Define a separate function:</p>
 <pre><code class="language-rust ignore">fn parse(input: &amp;str) -&gt; Option&lt;PrimaryColor&gt;
 </code></pre>
-<p>Check out <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">&quot;Parse, don't validate&quot;</a> for more on this.</p>
+<p>Check out <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">&quot;Parse, don't validate&quot;</a> for a deeper philosophy on this style of design.</p>
 </blockquote>
-<h2><a class="header" href="#book-structure" id="book-structure">Book structure</a></h2>
-<p>The remainder of the book is structured much like the example above. Each chapter follows the pattern:</p>
+<h2 id="book-structure"><a class="header" href="#book-structure">Book structure</a></h2>
+<p>The remainder of the book is structured much like the example above.</p>
 <ol>
-<li>Describe the concepts and constraints of a system in a particular application domain.</li>
-<li>Show the dynamically-typed and statically-typed implementations of an API for the system.</li>
-<li>Analyze what errors can happen in each flavor of API.</li>
+<li>I'll describe a pattern that arises in API design, like having multiple options as a function input.</li>
+<li>I'll show how a general mechanism, like enums, can encode aspects of the design into types.</li>
+<li>I'll go through what errors can happen in each flavor of API.</li>
 </ol>
 <p>You can consume this book à la carte, reading individual chapters as they're useful to you. But each chapter does (somewhat) build on the previous ones, so you may enjoy a start-to-finish read as well.</p>
 

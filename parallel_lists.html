@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Parallel Lists - Rust API Type Patterns</title>
+        <title>Parallel Lists - Type-Driven API Design in Rust</title>
         
         
 
@@ -127,7 +127,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">Rust API Type Patterns</h1>
+                    <h1 class="menu-title">Type-Driven API Design in Rust</h1>
 
                     <div class="right-buttons">
                         
@@ -136,13 +136,15 @@
                         </a>
                         
                         
+                        
+
                     </div>
                 </div>
 
                 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -163,7 +165,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#parallel-lists" id="parallel-lists">Parallel Lists</a></h1>
+                        <h1 id="parallel-lists"><a class="header" href="#parallel-lists">Parallel Lists</a></h1>
 <p>Another common pattern in system design is to have two lists of pairwise-related (or &quot;parallel&quot;) elements. For example, consider <code>println</code>:</p>
 <pre><code class="language-rust ignore">println!(&quot;#{:03} {}: {}&quot;, id, user, message);
 </code></pre>
@@ -176,7 +178,7 @@ fn user_message(id: Id, message_id: MessageId) {
 </code></pre>
 <p>The first list is the routing variables (e.g. <code>:id</code>) and the second is the function parameters (e.g. <code>id: Id</code>). These lists must have the same length and corresponding types.</p>
 <p>I'll show you how to use <strong>heterogeneous lists</strong> (H-lists), or lists of values of different types, to implement APIs with parallel lists. Specifically, we will implement a type-safe printf. For a real-world example, you can check out how the <a href="https://docs.rs/warp/">warp framework</a> uses H-lists to do type-safe web routing.</p>
-<h2><a class="header" href="#core-mechanism-hlist" id="core-mechanism-hlist">Core mechanism: HList</a></h2>
+<h2 id="core-mechanism-hlist"><a class="header" href="#core-mechanism-hlist">Core mechanism: HList</a></h2>
 <p>First, we need to understand H-lists. An H-list is a sequence of values of potentially different types. For example, <code>[1, &quot;a&quot;, true]</code> is an H-list, but not a valid Rust vector. H-lists are implemented in Rust using a linked-list style:</p>
 <pre><code class="language-rust ignore">struct HNil;
 struct HCons&lt;Head, Tail&gt; {
@@ -191,7 +193,7 @@ let example: HCons&lt;i32, HCons&lt;bool, HNil&gt;&gt; =
 <p>Just like Rust has <code>vec![]</code>, we can use the <a href="https://github.com/lloydmeta/frunk#hlist">frunk</a> crate to get an <code>hlist!</code> macro.</p>
 <pre><code class="language-rust ignore">let example = hlist![1, true]; // same as above
 </code></pre>
-<h2><a class="header" href="#setting-up-printf" id="setting-up-printf">Setting up printf</a></h2>
+<h2 id="setting-up-printf"><a class="header" href="#setting-up-printf">Setting up printf</a></h2>
 <p>Let's go back to the ingredients of printf. We need a format string and an argument list. The key idea is to represent both with an H-list, and carefully use Rust's traits to ensure our desired property: the number of arguments should match the number of holes.</p>
 <p>First, to represent format strings, we will have a sequence of structs that represent each part of the string.</p>
 <pre><code class="language-rust ignore">pub struct FString(&amp;'static str);
@@ -215,7 +217,7 @@ let example = hlist![
 <p>And this should be a compile-time (NOT run-time) error:</p>
 <pre><code class="language-rust ignore">example.format(hlist![&quot;Only one arg&quot;]);
 </code></pre>
-<h2><a class="header" href="#the-format-trait" id="the-format-trait">The Format trait</a></h2>
+<h2 id="the-format-trait"><a class="header" href="#the-format-trait">The Format trait</a></h2>
 <p>First, we need to define the signature of our <code>format</code> function.</p>
 <pre><code class="language-rust ignore">trait Format&lt;ArgList&gt; {
   fn format(&amp;self, args: ArgList) -&gt; String;
@@ -254,7 +256,7 @@ where
 }
 </code></pre>
 <p>Be careful to observe which H-list is being accessed by <code>head</code> and <code>tail</code>. Here, the <code>args</code> H-list provides the data to fill the hole via <code>args.head</code>.</p>
-<h2><a class="header" href="#checking-our-properties" id="checking-our-properties">Checking our properties</a></h2>
+<h2 id="checking-our-properties"><a class="header" href="#checking-our-properties">Checking our properties</a></h2>
 <p>With this implementation, our correct example successfully compiles and runs:</p>
 <pre><code class="language-rust ignore">let example = hlist![
   FString(&quot;Hello &quot;), FVar, FString(&quot;! The first prime is &quot;), FVar
@@ -280,7 +282,7 @@ assert_eq!(
 </code></pre>
 <p>While the error is enigmatic, our mistake is at least correctly caught at compile-time. This is because Rust deduces that <code>example.format()</code> expects an H-list of the shape <code>HCons&lt;_, HCons&lt;_, HNil&gt;&gt;</code>, but it finds <code>HNil</code> too soon in our 1-element H-list. A similar error occurs when providing too many args.</p>
 <p>Stupendous! We have successfully implemented a type-safe printf using H-lists and traits.</p>
-<h2><a class="header" href="#extending-our-abstraction" id="extending-our-abstraction">Extending our abstraction</a></h2>
+<h2 id="extending-our-abstraction"><a class="header" href="#extending-our-abstraction">Extending our abstraction</a></h2>
 <p>Right now, our <code>Format</code> function just checks that the format list and argument list are the same length. We could extend our format structures, for example to ensure that an <code>FVar</code> must be a particular type, or must use <code>Debug</code> vs. <code>Display</code>. Here's the sketch of such a strategy:</p>
 <pre><code class="language-rust ignore">use std::marker::PhantomData;
 

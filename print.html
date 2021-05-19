@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Rust API Type Patterns</title>
+        <title>Type-Driven API Design in Rust</title>
         
         <meta name="robots" content="noindex" />
         
@@ -129,7 +129,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">Rust API Type Patterns</h1>
+                    <h1 class="menu-title">Type-Driven API Design in Rust</h1>
 
                     <div class="right-buttons">
                         
@@ -138,13 +138,15 @@
                         </a>
                         
                         
+                        
+
                     </div>
                 </div>
 
                 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -165,18 +167,21 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#rust-api-type-patterns" id="rust-api-type-patterns">Rust API Type Patterns</a></h1>
+                        <h1 id="type-driven-api-design-in-rust"><a class="header" href="#type-driven-api-design-in-rust">Type-Driven API Design in Rust</a></h1>
 <p>This book is for people who are writing APIs in Rust. In particular, APIs that involve complex abstractions: variadics, state machines, extensible architectures, and so on.</p>
-<p><strong>The central theme is how to enforce API invariants by replacing dynamically-typed abstractions with statically-typed ones.</strong></p>
-<h2><a class="header" href="#a-prototypical-example-enums-over-strings" id="a-prototypical-example-enums-over-strings">A prototypical example: enums over strings</a></h2>
-<p>A basic example of this theme is using enums to represent a finite set of options, rather than a string. Imagine trying to convert a description of a color to an RGB tuple. This API design is error-prone:</p>
+<p><strong>The central theme is how to enforce API design by replacing dynamically-typed abstractions with statically-typed ones.</strong></p>
+<blockquote>
+<p>To understand this book's content, you should be familiar with Rust's core features: ownership, generics, traits, closures — anything covered in <a href="https://doc.rust-lang.org/book/">TRPL</a>.</p>
+</blockquote>
+<h2 id="a-prototypical-example-enums-over-strings"><a class="header" href="#a-prototypical-example-enums-over-strings">A prototypical example: enums over strings</a></h2>
+<p>A basic example of this theme is using enums to represent a finite set of options, rather than a string. Imagine trying to convert a description of a primary color to an RGB tuple. This API design is error-prone:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn color_to_rgb_bad(color: &amp;str) -&gt; Option&lt;(u8, u8, u8)&gt; {
   match color {
     &quot;Red&quot; =&gt; Some((255, 0, 0)),
-    &quot;Green&quot; =&gt; Some((0, 255, 0)),
+    &quot;Yellow&quot; =&gt; Some((255, 255, 0)),
     &quot;Blue&quot; =&gt; Some((0, 0, 255)),
     _ =&gt; None
   }
@@ -187,11 +192,11 @@
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>enum PrimaryColor { Red, Green, Blue }
+</span>enum PrimaryColor { Red, Yellow, Blue }
 fn color_to_rgb_good(color: PrimaryColor) -&gt; (u8, u8, u8) {
   match color {
     PrimaryColor::Red =&gt; (255, 0, 0),
-    PrimaryColor::Green =&gt; (0, 255, 0),
+    PrimaryColor::Yellow =&gt; (255, 255, 0),
     PrimaryColor::Blue =&gt; (0, 0, 255)
   }
 }
@@ -203,26 +208,21 @@ fn color_to_rgb_good(color: PrimaryColor) -&gt; (u8, u8, u8) {
 <li><strong>For the API author,</strong> the compiler does not enforce that the implementation of <code>color_to_rgb_bad</code> matches on the strings intended by the author. If they wrote <code>&quot;Rod&quot;</code> instead of <code>&quot;Red&quot;</code>, the error would only arise in a unit test or client bug report. By contrast, the compiler enforces that each enum variants must be one of the three enum values.</li>
 </ul>
 <blockquote>
-<p><em>Aside:</em> what if you need to take <code>&amp;str</code> as input, e.g. from a user at the command line? Then don't try to accomplish two things in one function. Define a separate function:</p>
+<p>What if you need to take <code>&amp;str</code> as input, e.g. from a user at the command line? Then don't try to accomplish two things in one function. Define a separate function:</p>
 <pre><code class="language-rust ignore">fn parse(input: &amp;str) -&gt; Option&lt;PrimaryColor&gt;
 </code></pre>
-<p>Check out <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">&quot;Parse, don't validate&quot;</a> for more on this.</p>
+<p>Check out <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">&quot;Parse, don't validate&quot;</a> for a deeper philosophy on this style of design.</p>
 </blockquote>
-<h2><a class="header" href="#book-structure" id="book-structure">Book structure</a></h2>
-<p>The remainder of the book is structured much like the example above. Each chapter follows the pattern:</p>
+<h2 id="book-structure"><a class="header" href="#book-structure">Book structure</a></h2>
+<p>The remainder of the book is structured much like the example above.</p>
 <ol>
-<li>Describe the concepts and constraints of a system in a particular application domain.</li>
-<li>Show the dynamically-typed and statically-typed implementations of an API for the system.</li>
-<li>Analyze what errors can happen in each flavor of API.</li>
+<li>I'll describe a pattern that arises in API design, like having multiple options as a function input.</li>
+<li>I'll show how a general mechanism, like enums, can encode aspects of the design into types.</li>
+<li>I'll go through what errors can happen in each flavor of API.</li>
 </ol>
 <p>You can consume this book à la carte, reading individual chapters as they're useful to you. But each chapter does (somewhat) build on the previous ones, so you may enjoy a start-to-finish read as well.</p>
-<h1><a class="header" href="#the-main-idea" id="the-main-idea">The Main Idea</a></h1>
-<p>An API is a computational <strong>representation</strong> of real-world concepts. Representations are mappings between elements of a represented world (e.g. real life) and a representing world (e.g. an API). For example, the height of a person can be represented in many ways:</p>
-<center>
-    <img src="./images/representation_height.png" width="90%" /><br />
-    <i>Rumelhart and Norman, <a href="https://apps.dtic.mil/sti/pdfs/ADA130662.pdf">Representation in Memory</a>. 1983</i>
-</center>
-<p>More abstract concepts, like natural numbers, also have many representations:</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="the-main-idea"><a class="header" href="#the-main-idea">The Main Idea</a></h1>
+<p>An API is a computational <strong>representation</strong> of real-world concepts. Representations are mappings between elements of a represented world (e.g. real life) and a representing world (e.g. an API). For example, the abstract concept of a number can be expressed through many notations (or interfaces):</p>
 <center>
     <img src="./images/representation_number_table.png" width="90%" /><br />
     <i>Zhang and Norman, <a href="https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf">A Representational Analysis of Numeration Systems</a>. 1996</i>
@@ -231,25 +231,18 @@ fn color_to_rgb_good(color: PrimaryColor) -&gt; (u8, u8, u8) {
 <p>A skilled API designer can design representations <em>systematically</em>, understanding the structure of representations that makes tasks easier or harder. For example, numbers can be categorized along a few dimensions:</p>
 <center>
     <img src="./images/representation_number_diagram.png" width="90%" /><br />
-    <i>Zhang and Norman, <a href="https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf">A Representational Analysis of Numeration Systems</a>. 1996</i>
 </center>
 <p>Using this taxonomy, we can understand that all 1D systems (like tally marks) make addition easier, because addition reduces to concatenating strings (e.g. II + I = III). However, 1x1D systems (like Arabic numerals) make multiplication easier — see <a href="https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf">the paper</a> for why.</p>
-<p>Summarizing the main points:</p>
-<ol>
-<li>Representations map elements of one domain to another.</li>
-<li>Representations make tasks easier or harder based on their design.</li>
-<li>Representational principles can be applied to design better representations.</li>
-</ol>
-<p>In this book, my goal is to show you how representational principles can be used to improve API design. That is, when you map the real world to an API, how can you help API clients be more productive and avoid mistakes?</p>
 <blockquote>
-<p><em>Aside:</em> if you're interested in learning more about representation theory in cognitive psychology, I strongly recommend <a href="https://www.amazon.com/Things-That-Make-Smart-Attributes-ebook/dp/B00QFJHP94">Things That Make Us Smart</a> by Don Norman.</p>
+<p>If you're interested in learning more about representation theory in cognitive psychology, I strongly recommend <a href="https://www.amazon.com/Things-That-Make-Smart-Attributes-ebook/dp/B00QFJHP94">Things That Make Us Smart</a> by Don Norman.</p>
 </blockquote>
+<p>In this book, my goal is to show you how representational principles can be used to improve API design. That is, when you map the real world to an API, how can you help API clients be more productive and avoid mistakes?</p>
 <!-- and **a good API has a small distance between the representation and the concept**. This begs the question: what defines such a distance? -->
-<h2><a class="header" href="#principles-of-representation-cardinality-mismatch" id="principles-of-representation-cardinality-mismatch">Principles of representation: cardinality mismatch</a></h2>
+<h2 id="principles-of-representation-cardinality-mismatch"><a class="header" href="#principles-of-representation-cardinality-mismatch">Principles of representation: cardinality mismatch</a></h2>
 <p>Consider the example from the last chapter. We want to define a data type that represents the three primary colors. We could do this as either a string or an enum:</p>
 <pre><code class="language-rust ignore">fn color_to_rgb_bad(color: &amp;str) // ...
 
-enum PrimaryColor { Red, Green, Blue }
+enum PrimaryColor { Red, Yellow, Blue }
 fn color_to_rgb_good(color: PrimaryColor) // ..
 </code></pre>
 <p>Here, an enum is preferable to a string because <strong>there is a one-to-one map from elements of the representation to elements of the concept</strong>. By contrast, the type <code>&amp;str</code> includes many more strings than primary colors. Because <code>&amp;str</code> is not one-to-one, the <code>color_to_rgb_bad</code> function must handle the additional case of elements in the representation that don't exist in the concept.</p>
@@ -275,13 +268,16 @@ fn read_to_string(path: String, buffer: &amp;mut String) -&gt; bool {
 <span class="boring">}
 </span></code></pre></pre>
 <p>In this API design, the <code>bool</code> represents the concept of success or failure. However, I/O can fail for a number reason, e.g. if the file is not found or the user does not have read permission. The <code>Result</code> representation has a one-to-one mapping because <code>io::Error</code> has a separate value for each I/O error, while the <code>false</code> value must represent every I/O error. The consequence of the <code>bool</code> design is that the client cannot distinguish between failure cases given a return value of <code>false</code>.</p>
-<h2><a class="header" href="#the-main-idea-consistency-between-related-elements" id="the-main-idea-consistency-between-related-elements">The main idea: consistency between related elements</a></h2>
+<h2 id="the-main-idea-consistency-between-related-elements"><a class="header" href="#the-main-idea-consistency-between-related-elements">The main idea: consistency between related elements</a></h2>
 <p>This main idea of this book is a principle of representation: <strong>consistency between related elements</strong>. In a system with many parts, it's often important that certain pieces be in sync with each other. For example:</p>
 <ul>
 <li>In an event listener, the event name (e.g. <code>&quot;click&quot;</code>) must be consistent with the event parameters (e.g. <code>mousex</code>).</li>
 <li>In a state machine, the machine's state (e.g. <code>FileOpen</code>) must be consistent with the set of actions permissible on the machine (e.g. <code>.close()</code>).</li>
 <li>In a function with variadic arguments, the order of arguments (e.g. <code>route(&quot;/:user/:message&quot;)</code>) must be consistent with the order of usage (e.g. <code>|u: User, m: Message|</code>).</li>
 </ul>
+<blockquote>
+<p>Another way of interpreting this principle is &quot;when multiple components must agree on aspects of an entity&quot;, which is known as <a href="https://practicingruby.com/articles/connascence">connascence</a>.</p>
+</blockquote>
 <p>Enforcing consistency is often easier in a <strong>closed system</strong>, where every piece is defined and no further ones can be added. For example, consider an (inefficient) event system with a fixed set of events:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -313,7 +309,7 @@ fn example() {
 </span></code></pre></pre>
 <p>The nature of Rust's <code>enum</code> enforces that if a <code>Click</code> event occurred, then (and only then) will the listener be able to access the <code>mousex</code> field. However, what if an API client wanted to add another event to the system? They cannot reach into the API and add another enum variant.</p>
 <p>Therein lies the core technical challenge: how can an API enforce consistency between related elements in an open system? Over the next few chapters, you'll learn how careful use of Rust's type system can achieve both of these goals.</p>
-<h1><a class="header" href="#access-control" id="access-control">Access control</a></h1>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="access-control"><a class="header" href="#access-control">Access control</a></h1>
 <p>A common pattern in system design is that X can only happen if Y is true.</p>
 <ul>
 <li>A user can only access their account settings if logged in.</li>
@@ -322,7 +318,7 @@ fn example() {
 </ul>
 <p>These properties are all instances of <strong>access control</strong>, where the ability to execute an action is predicated on access privileges.</p>
 <p>In terms of our representational principle, the two conceptual elements are the <strong>action</strong> (eg opening a webpage, reading data) and the <strong>access</strong> (logged in, locked a mutex). We will look at how to design APIs to ensure consistency between the action and the access.</p>
-<h1><a class="header" href="#witnesses" id="witnesses">Witnesses</a></h1>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="witnesses"><a class="header" href="#witnesses">Witnesses</a></h1>
 <p>Let's say we're designing a website with a panel that only admins can access. A naive approach relies on enforcing access control by convention:</p>
 <pre><code class="language-rust ignore">/// IMPORTANT: Only call this function when logged in as admin!
 fn render_admin_panel() -&gt; Html {
@@ -386,7 +382,7 @@ fn admin_panel_route_whoops() -&gt; Html {
 </li>
 </ol>
 <p>With these two ideas, the witness pattern can statically enforce access control. Witnesses encode access capabilities, and actions require witnesses before being executed. For a real-world example, check out <a href="https://rocket.rs/v0.4/guide/requests/#request-guards">Request Guards</a> in the Rocket framework (see also <a href="https://stanford-cs242.github.io/f18/lectures/07-1-sergio.html#rocket">Sergio's lecture notes</a>).</p>
-<h1><a class="header" href="#guards" id="guards">Guards</a></h1>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="guards"><a class="header" href="#guards">Guards</a></h1>
 <p>Recall that witnesses are proofs of properties, like being a website admin. In the witness pattern, the actual value (e.g. <code>admin: Admin</code>) may not actually be used at runtime — its presence is purely for statically enforcing access control. When using witnesses, the API designer must carefully ensure that every time a piece of code makes an assumption (e.g. user is an admin), that the code has access to a corresponding witness.</p>
 <p>An alternative approach is to <strong>associate a witness with its runtime capabilities.</strong> To dig into that statement, we'll use the running example of a <code>Mutex&lt;T&gt;</code> that protects a value of type <code>T</code> given a <code>SystemMutex</code> (e.g. <a href="http://www.cs.kent.edu/%7Eruttan/sysprog/lectures/multi-thread/pthread_mutex_init.html">pthread_mutex</a>). Recall that a mutex should satisfy the following design goals:</p>
 <ol>
@@ -425,7 +421,7 @@ fn main() {
 }
 </code></pre>
 <p>This API nominally enforces access control via encapsulation: the only way to access <code>T</code> is by calling <code>lock</code>, which ensures that <code>SystemMutex::lock</code> is called. However, the issue is that there is no mechanism which relates the lifetime of <code>&amp;mut T</code> to the lifetime of the lock on the system mutex. So an API client could forget to call <code>Mutex::unlock</code> which violates the cleanup design goal. Or worse, an API client could call <code>Mutex::unlock</code> <em>too early</em> which would allow other threads to access <code>T</code> simultaneously, violating the access control design goal.</p>
-<h2><a class="header" href="#witness-approach" id="witness-approach">Witness approach</a></h2>
+<h2 id="witness-approach"><a class="header" href="#witness-approach">Witness approach</a></h2>
 <p>How could we try to solve this problem with a witness? One possible approach is to return a witness to a mutex being locked, and use that witness to mediate access and cleanup.</p>
 <pre><code class="language-rust ignore">struct MutexIsLocked;
 
@@ -469,7 +465,7 @@ fn main() {
 <li>Nothing relates the <code>MutexIsLocked</code> witness to the mutex it came from. You could create two unrelated mutexes, and pass the witness from one into the other.</li>
 </ol>
 <p>Again, our main idea returns: <strong>consistency between related elements.</strong> Our witness-based API does not ensure that access to the mutex's data is consistent with access to the witness of the locked mutex.</p>
-<h2><a class="header" href="#guard-approach" id="guard-approach">Guard approach</a></h2>
+<h2 id="guard-approach"><a class="header" href="#guard-approach">Guard approach</a></h2>
 <p>Instead of a <code>MutexIsLocked</code> witness, we will use a <strong>guard</strong>: a data structure that both proves a property (a mutex is locked) <em>and</em> mediates access to data (the mutex's <code>T</code>). The idea is that calling <code>Mutex::lock</code> will return a <code>MutexGuard</code> which manages the system mutex in its constructor and destructor, and it provides access to the inner <code>T</code>.</p>
 <pre><code class="language-rust ignore">struct MutexGuard&lt;'a, T&gt; {
   lock: &amp;'a Mutex&lt;T&gt;
@@ -521,7 +517,36 @@ fn main() {
 <li><strong>Cleanup:</strong> only after all borrows to <code>T</code> have ended will <code>MutexGuard</code> be dropped, which then automatically unlocks the system mutex. The API client cannot possibly forget or unlock in the wrong order.</li>
 </ol>
 <p>For more examples, this pattern is used throughout the standard library: <a href="https://doc.rust-lang.org/stable/std/sync/struct.Mutex.html"><code>Mutex&lt;T&gt;</code></a>, <a href="https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html"><code>RwLock&lt;T&gt;</code></a>, and <a href="https://doc.rust-lang.org/stable/std/cell/struct.RefCell.html"><code>RefCell&lt;T&gt;</code></a>.</p>
-<h1><a class="header" href="#state-machines" id="state-machines">State Machines</a></h1>
+<h2 id="closure-guards"><a class="header" href="#closure-guards">Closure guards</a></h2>
+<p>A variant on the guard design uses closures rather than guard structs. For example, a closure-based mutex:</p>
+<pre><pre class="playground"><code class="language-rust">struct Mutex&lt;T&gt; { /* same as before */ }
+
+impl&lt;T&gt; Mutex&lt;T&gt; {
+  pub fn lock(&amp;self, f: impl FnMut(&amp;mut T)) {
+    self.system_mutex.lock();
+    f(&amp;mut self.t.get());
+    self.system_mutex.unlock();
+  }
+}
+
+fn main() {
+  let mtx = Mutex::new(1);
+  mtx.lock(|n| {
+    *n = 1;
+  });
+
+  mtx.lock(|n| {
+    *n = 2;
+  });
+}
+</code></pre></pre>
+<p>The use of closures enables an API to:</p>
+<ol>
+<li>Execute code at the right time (after the lock is taken)</li>
+<li>Pass the protected data to the code for a limited duration (<code>&amp;mut T</code>)</li>
+<li>Regain control and cleanup after execution (unlocking the lock)</li>
+</ol>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="state-machines"><a class="header" href="#state-machines">State Machines</a></h1>
 <p>Access control can be viewed as a special case of a <strong>state machine</strong>. For example, a mutex is a two-state machine:</p>
 <center>
 <svg width="522" height="155" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -546,7 +571,7 @@ fn main() {
 <li>A file can only be closed while its file descriptor is open.</li>
 <li>A <a href="https://rust-embedded.github.io/book/static-guarantees/state-machines.html">GPIO pin</a> can only be written to when in write mode.</li>
 </ul>
-<h1><a class="header" href="#typestate" id="typestate">Typestate</a></h1>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="typestate"><a class="header" href="#typestate">Typestate</a></h1>
 <p>Let's say we're implementing an API for a read-only file. It should adhere to the following state machine:</p>
 <center>
 <svg width="562" height="195" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -606,7 +631,7 @@ fn main() {
 }
 </code></pre>
 <p>The key question for this API: how does it prevent calling <code>read()</code> in an EOF state? Here, the answer is: it doesn't. Rather, calling <code>read()</code> after EOF is a <strong>runtime error</strong>, represented by the <code>None</code> branch of the <code>Option</code> type. The state machine is only contained internally (<code>reached_eof</code>).</p>
-<h2><a class="header" href="#representing-states-as-structs" id="representing-states-as-structs">Representing states as structs</a></h2>
+<h2 id="representing-states-as-structs"><a class="header" href="#representing-states-as-structs">Representing states as structs</a></h2>
 <p>Let's say the goal is to prevent the user from <em>ever</em> calling <code>read()</code> in an EOF state. That is, the call to <code>f.read()</code> after the <code>while let</code> <em>should not compile in the first place</em>. Now we arrive at the concept of <strong>typestate</strong>: encoding the states of the state machine into the type system.</p>
 <pre><code class="language-rust ignore">// 1. Each state is its own struct
 struct ReadingFile { inner: File }
@@ -663,7 +688,7 @@ fn main() {
 <li><strong>Each state has only its transitions implemented:</strong> the <code>read()</code> method is implemented for <code>ReadingFile</code>, but not for <code>EofFile</code>, while both can call <code>close()</code>.</li>
 <li><strong>Transitions between states consume ownership:</strong> the <code>read()</code> method consumes <code>ReadingFile</code> and returns whichever state comes after. This prevents calling methods on an old state.</li>
 </ol>
-<h2><a class="header" href="#moving-states-into-a-type-parameter" id="moving-states-into-a-type-parameter">Moving states into a type parameter</a></h2>
+<h2 id="moving-states-into-a-type-parameter"><a class="header" href="#moving-states-into-a-type-parameter">Moving states into a type parameter</a></h2>
 <p>One ugliness in this design is that the user has to manage a single logical object (the file) but split into multiple actual types (the states). An alternative design is to represent states as a <strong>type parameter</strong> to a single object, like so:</p>
 <pre><code class="language-rust ignore">struct Reading;
 struct Eof;
@@ -701,15 +726,15 @@ impl File2&lt;Eof&gt; {
 }
 </code></pre>
 <p>The API is largely the same, and the usage example from before still works. But on the implementation side, we now have to carry around this <a href="https://doc.rust-lang.org/std/marker/struct.PhantomData.html"><code>PhantomData</code></a> marker or else Rust complains about an unused type parameter.</p>
-<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<h2 id="further-reading"><a class="header" href="#further-reading">Further reading</a></h2>
 <ul>
 <li><a href="https://stanford-cs242.github.io/f19/lectures/08-2-typestate">Stanford CS 242 - Typestate</a></li>
 <li><a href="https://yoric.github.io/post/rust-typestate/">Typestates in Rust</a></li>
 <li><a href="https://blog.systems.ethz.ch/blog/2018/a-hammer-you-can-only-hold-by-the-handle.html">A hammer you can only hold by the handle</a></li>
 </ul>
-<h1><a class="header" href="#state-combinators" id="state-combinators">State combinators</a></h1>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="state-combinators"><a class="header" href="#state-combinators">State combinators</a></h1>
 <p>TODO: talk about session types</p>
-<h1><a class="header" href="#parallel-lists" id="parallel-lists">Parallel Lists</a></h1>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="parallel-lists"><a class="header" href="#parallel-lists">Parallel Lists</a></h1>
 <p>Another common pattern in system design is to have two lists of pairwise-related (or &quot;parallel&quot;) elements. For example, consider <code>println</code>:</p>
 <pre><code class="language-rust ignore">println!(&quot;#{:03} {}: {}&quot;, id, user, message);
 </code></pre>
@@ -722,7 +747,7 @@ fn user_message(id: Id, message_id: MessageId) {
 </code></pre>
 <p>The first list is the routing variables (e.g. <code>:id</code>) and the second is the function parameters (e.g. <code>id: Id</code>). These lists must have the same length and corresponding types.</p>
 <p>I'll show you how to use <strong>heterogeneous lists</strong> (H-lists), or lists of values of different types, to implement APIs with parallel lists. Specifically, we will implement a type-safe printf. For a real-world example, you can check out how the <a href="https://docs.rs/warp/">warp framework</a> uses H-lists to do type-safe web routing.</p>
-<h2><a class="header" href="#core-mechanism-hlist" id="core-mechanism-hlist">Core mechanism: HList</a></h2>
+<h2 id="core-mechanism-hlist"><a class="header" href="#core-mechanism-hlist">Core mechanism: HList</a></h2>
 <p>First, we need to understand H-lists. An H-list is a sequence of values of potentially different types. For example, <code>[1, &quot;a&quot;, true]</code> is an H-list, but not a valid Rust vector. H-lists are implemented in Rust using a linked-list style:</p>
 <pre><code class="language-rust ignore">struct HNil;
 struct HCons&lt;Head, Tail&gt; {
@@ -737,7 +762,7 @@ let example: HCons&lt;i32, HCons&lt;bool, HNil&gt;&gt; =
 <p>Just like Rust has <code>vec![]</code>, we can use the <a href="https://github.com/lloydmeta/frunk#hlist">frunk</a> crate to get an <code>hlist!</code> macro.</p>
 <pre><code class="language-rust ignore">let example = hlist![1, true]; // same as above
 </code></pre>
-<h2><a class="header" href="#setting-up-printf" id="setting-up-printf">Setting up printf</a></h2>
+<h2 id="setting-up-printf"><a class="header" href="#setting-up-printf">Setting up printf</a></h2>
 <p>Let's go back to the ingredients of printf. We need a format string and an argument list. The key idea is to represent both with an H-list, and carefully use Rust's traits to ensure our desired property: the number of arguments should match the number of holes.</p>
 <p>First, to represent format strings, we will have a sequence of structs that represent each part of the string.</p>
 <pre><code class="language-rust ignore">pub struct FString(&amp;'static str);
@@ -761,7 +786,7 @@ let example = hlist![
 <p>And this should be a compile-time (NOT run-time) error:</p>
 <pre><code class="language-rust ignore">example.format(hlist![&quot;Only one arg&quot;]);
 </code></pre>
-<h2><a class="header" href="#the-format-trait" id="the-format-trait">The Format trait</a></h2>
+<h2 id="the-format-trait"><a class="header" href="#the-format-trait">The Format trait</a></h2>
 <p>First, we need to define the signature of our <code>format</code> function.</p>
 <pre><code class="language-rust ignore">trait Format&lt;ArgList&gt; {
   fn format(&amp;self, args: ArgList) -&gt; String;
@@ -800,7 +825,7 @@ where
 }
 </code></pre>
 <p>Be careful to observe which H-list is being accessed by <code>head</code> and <code>tail</code>. Here, the <code>args</code> H-list provides the data to fill the hole via <code>args.head</code>.</p>
-<h2><a class="header" href="#checking-our-properties" id="checking-our-properties">Checking our properties</a></h2>
+<h2 id="checking-our-properties"><a class="header" href="#checking-our-properties">Checking our properties</a></h2>
 <p>With this implementation, our correct example successfully compiles and runs:</p>
 <pre><code class="language-rust ignore">let example = hlist![
   FString(&quot;Hello &quot;), FVar, FString(&quot;! The first prime is &quot;), FVar
@@ -826,7 +851,7 @@ assert_eq!(
 </code></pre>
 <p>While the error is enigmatic, our mistake is at least correctly caught at compile-time. This is because Rust deduces that <code>example.format()</code> expects an H-list of the shape <code>HCons&lt;_, HCons&lt;_, HNil&gt;&gt;</code>, but it finds <code>HNil</code> too soon in our 1-element H-list. A similar error occurs when providing too many args.</p>
 <p>Stupendous! We have successfully implemented a type-safe printf using H-lists and traits.</p>
-<h2><a class="header" href="#extending-our-abstraction" id="extending-our-abstraction">Extending our abstraction</a></h2>
+<h2 id="extending-our-abstraction"><a class="header" href="#extending-our-abstraction">Extending our abstraction</a></h2>
 <p>Right now, our <code>Format</code> function just checks that the format list and argument list are the same length. We could extend our format structures, for example to ensure that an <code>FVar</code> must be a particular type, or must use <code>Debug</code> vs. <code>Display</code>. Here's the sketch of such a strategy:</p>
 <pre><code class="language-rust ignore">use std::marker::PhantomData;
 
@@ -858,7 +883,7 @@ where
 fmt.format(hlist![&quot;not a number&quot;]);
 </code></pre>
 <p>Then the code will not compile with the error, <code>&amp;'static str is not i32</code>.</p>
-<h1><a class="header" href="#registries" id="registries">Registries</a></h1>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="registries"><a class="header" href="#registries">Registries</a></h1>
 <p>Extensible systems, or frameworks where the client plugs in their own functionality, often have a notion of &quot;registration&quot; to associate the user's code with a piece of the framework. For example:</p>
 <ul>
 <li>In event systems, users can register callbacks to be triggered when an event occurs.</li>
@@ -914,7 +939,7 @@ fn main() {
 </ul>
 <p>The core issue is that the event name <code>&quot;click&quot;</code> and the event data <code>OnClick</code> are linked by convention but not by design. This issue is inherent to registries that use strings to identify objects.</p>
 <p>Instead, I will show you how to design both an event system and a dependency injection system using <strong>types as keys intead of strings as keys</strong>. Type-based registries will avoid all of the issues in the API above.</p>
-<h2><a class="header" href="#1-type-safe-events" id="1-type-safe-events">1. Type-safe events</a></h2>
+<h2 id="1-type-safe-events"><a class="header" href="#1-type-safe-events">1. Type-safe events</a></h2>
 <p>Our goal is to write an API that looks like this from the client's perspective:</p>
 <pre><code class="language-rust ignore">struct OnClick {
   mouse_x: f32,
@@ -963,7 +988,7 @@ impl EventRegistry {
 }
 </code></pre>
 <p>Each method on the event registry takes an event type <code>E</code> as input, rather than a string key. The registry associates listeners with that type, and then looks up listeners with that type.</p>
-<h3><a class="header" href="#mapping-types-to-values" id="mapping-types-to-values">Mapping types to values</a></h3>
+<h3 id="mapping-types-to-values"><a class="header" href="#mapping-types-to-values">Mapping types to values</a></h3>
 <p>To associate values (e.g. event listeners) with types, we will make a core building block: the <code>TypeMap</code>.</p>
 <p>Rust has <a href="https://doc.rust-lang.org/std/any/"><code>std::any</code></a> for this purpose. <a href="https://doc.rust-lang.org/std/any/struct.TypeId.html"><code>TypeId</code></a> allows us to get a unique, hashable identifier for each type. <a href="https://doc.rust-lang.org/std/any/trait.Any.html"><code>Any</code></a> allows us to up-cast/down-cast objects at runtime. Hence, our <code>TypeMap</code> will map from <code>TypeId</code> to <code>Box&lt;dyn Any&gt;</code>.</p>
 <pre><code class="language-rust ignore">use std::collections::HashMap;
@@ -999,7 +1024,7 @@ map.set::&lt;i32&gt;(1);
 }
 </code></pre>
 <p>Look carefully at <code>get_mut</code>. The inner hash map returns a value of type <code>Box&lt;dyn Any&gt;</code>, which we can <code>downcast_mut</code> to become a value of type <code>&amp;mut T</code>. This operation is guaranteed to not fail, because only values of type <code>T</code> are stored in the hash map under the key for <code>T</code>.</p>
-<h3><a class="header" href="#implementing-the-event-system" id="implementing-the-event-system">Implementing the event system</a></h3>
+<h3 id="implementing-the-event-system"><a class="header" href="#implementing-the-event-system">Implementing the event system</a></h3>
 <p>With the <code>TypeMap</code> in hand, we can finish our event system. For the <code>EventRegistry</code>, the <code>TypeMap</code> will map from events to a vector of listeners.</p>
 <pre><code class="language-rust ignore">struct EventDispatcher(TypeMap);
 type ListenerVec&lt;E&gt; = Vec&lt;Box&lt;dyn EventListener&lt;E&gt;&gt;&gt;;
@@ -1024,7 +1049,7 @@ impl EventDispatcher {
 }
 </code></pre>
 <p>Returning to our API design goals, this design enforces consistency between related elements: an event listener's payload must match the event it's registered to.</p>
-<h2><a class="header" href="#2-type-safe-dependency-injection" id="2-type-safe-dependency-injection">2. Type-safe dependency injection</a></h2>
+<h2 id="2-type-safe-dependency-injection"><a class="header" href="#2-type-safe-dependency-injection">2. Type-safe dependency injection</a></h2>
 <p>We'll walk through another example of using type registries to avoid unsafe string-based design. The basic idea of dependency injection (DI) is that you have a component that depends on another, like a web server using a database. However, you don't want to hard-code a particular database constructor, and rather make it easy to swap in different databases. For example:</p>
 <pre><code class="language-rust ignore">trait Database {
   fn name(&amp;self) -&gt; &amp;'static str;
@@ -1058,7 +1083,7 @@ manager.build::&lt;MySQL&gt;().unwrap();
 let server = manager.build::&lt;WebServer&gt;().unwrap();
 server.lock().unwrap().run(); // prints Db name: MySQL
 </code></pre>
-<h3><a class="header" href="#di-constructors" id="di-constructors">DI constructors</a></h3>
+<h3 id="di-constructors"><a class="header" href="#di-constructors">DI constructors</a></h3>
 <p>First, we'll define a trait <code>DIBuilder</code> that represents a constructor within our DI system.</p>
 <pre><code class="language-rust ignore">trait DIBuilder {
   type Input;
@@ -1094,7 +1119,7 @@ impl DIBuilder for WebServer {
   }
 }
 </code></pre>
-<h3><a class="header" href="#di-manager" id="di-manager">DI manager</a></h3>
+<h3 id="di-manager"><a class="header" href="#di-manager">DI manager</a></h3>
 <p>Now that we know the dependency structure of our objects, we need a centralized manager to store the objects and fetch their dependencies.</p>
 <pre><code class="language-rust ignore">struct DIManager(TypeMap);
 </code></pre>
@@ -1122,7 +1147,7 @@ impl DIManager {
   }
 }
 </code></pre>
-<h3><a class="header" href="#di-dependencies" id="di-dependencies">DI dependencies</a></h3>
+<h3 id="di-dependencies"><a class="header" href="#di-dependencies">DI dependencies</a></h3>
 <p>Finally, we need a way to implement the <code>let input</code> line in <code>DIManager::build</code>. Given a type <code>T: DIBuilder</code>, it has an associated type <code>T::Input</code> that represents the inputs needed to build it.</p>
 <p>To simplify the problem, imagine <code>T::Input = S</code> where <code>S: DIBuilder</code>. Then if <code>S</code> has already been built, e.g. <code>T = WebServer</code> and <code>S = Box&lt;dyn Database&gt;</code>, we can fetch it directly from the typemap:</p>
 <pre><code class="language-rust ignore">let input = self.0.get::&lt;T::Input&gt;().map(|obj| obj.clone())?;
@@ -1196,7 +1221,7 @@ impl&lt;S: GetInput, T: GetInput&gt; GetInput for (S, T) {
 }
 </code></pre>
 <p>Now, the expression <code>T::Input::get_input(self)</code> will convert a tuple of types into a tuple of values of those types.</p>
-<h3><a class="header" href="#final-api-example" id="final-api-example">Final API example</a></h3>
+<h3 id="final-api-example"><a class="header" href="#final-api-example">Final API example</a></h3>
 <p>With the API complete, our example now looks like this:</p>
 <pre><code class="language-rust ignore">let mut manager = DIManager::new();
 manager.build::&lt;MySQL&gt;().unwrap();

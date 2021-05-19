@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Registries - Rust API Type Patterns</title>
+        <title>Registries - Type-Driven API Design in Rust</title>
         
         
 
@@ -127,7 +127,7 @@
                         
                     </div>
 
-                    <h1 class="menu-title">Rust API Type Patterns</h1>
+                    <h1 class="menu-title">Type-Driven API Design in Rust</h1>
 
                     <div class="right-buttons">
                         
@@ -136,13 +136,15 @@
                         </a>
                         
                         
+                        
+
                     </div>
                 </div>
 
                 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -163,7 +165,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#registries" id="registries">Registries</a></h1>
+                        <h1 id="registries"><a class="header" href="#registries">Registries</a></h1>
 <p>Extensible systems, or frameworks where the client plugs in their own functionality, often have a notion of &quot;registration&quot; to associate the user's code with a piece of the framework. For example:</p>
 <ul>
 <li>In event systems, users can register callbacks to be triggered when an event occurs.</li>
@@ -219,7 +221,7 @@ fn main() {
 </ul>
 <p>The core issue is that the event name <code>&quot;click&quot;</code> and the event data <code>OnClick</code> are linked by convention but not by design. This issue is inherent to registries that use strings to identify objects.</p>
 <p>Instead, I will show you how to design both an event system and a dependency injection system using <strong>types as keys intead of strings as keys</strong>. Type-based registries will avoid all of the issues in the API above.</p>
-<h2><a class="header" href="#1-type-safe-events" id="1-type-safe-events">1. Type-safe events</a></h2>
+<h2 id="1-type-safe-events"><a class="header" href="#1-type-safe-events">1. Type-safe events</a></h2>
 <p>Our goal is to write an API that looks like this from the client's perspective:</p>
 <pre><code class="language-rust ignore">struct OnClick {
   mouse_x: f32,
@@ -268,7 +270,7 @@ impl EventRegistry {
 }
 </code></pre>
 <p>Each method on the event registry takes an event type <code>E</code> as input, rather than a string key. The registry associates listeners with that type, and then looks up listeners with that type.</p>
-<h3><a class="header" href="#mapping-types-to-values" id="mapping-types-to-values">Mapping types to values</a></h3>
+<h3 id="mapping-types-to-values"><a class="header" href="#mapping-types-to-values">Mapping types to values</a></h3>
 <p>To associate values (e.g. event listeners) with types, we will make a core building block: the <code>TypeMap</code>.</p>
 <p>Rust has <a href="https://doc.rust-lang.org/std/any/"><code>std::any</code></a> for this purpose. <a href="https://doc.rust-lang.org/std/any/struct.TypeId.html"><code>TypeId</code></a> allows us to get a unique, hashable identifier for each type. <a href="https://doc.rust-lang.org/std/any/trait.Any.html"><code>Any</code></a> allows us to up-cast/down-cast objects at runtime. Hence, our <code>TypeMap</code> will map from <code>TypeId</code> to <code>Box&lt;dyn Any&gt;</code>.</p>
 <pre><code class="language-rust ignore">use std::collections::HashMap;
@@ -304,7 +306,7 @@ map.set::&lt;i32&gt;(1);
 }
 </code></pre>
 <p>Look carefully at <code>get_mut</code>. The inner hash map returns a value of type <code>Box&lt;dyn Any&gt;</code>, which we can <code>downcast_mut</code> to become a value of type <code>&amp;mut T</code>. This operation is guaranteed to not fail, because only values of type <code>T</code> are stored in the hash map under the key for <code>T</code>.</p>
-<h3><a class="header" href="#implementing-the-event-system" id="implementing-the-event-system">Implementing the event system</a></h3>
+<h3 id="implementing-the-event-system"><a class="header" href="#implementing-the-event-system">Implementing the event system</a></h3>
 <p>With the <code>TypeMap</code> in hand, we can finish our event system. For the <code>EventRegistry</code>, the <code>TypeMap</code> will map from events to a vector of listeners.</p>
 <pre><code class="language-rust ignore">struct EventDispatcher(TypeMap);
 type ListenerVec&lt;E&gt; = Vec&lt;Box&lt;dyn EventListener&lt;E&gt;&gt;&gt;;
@@ -329,7 +331,7 @@ impl EventDispatcher {
 }
 </code></pre>
 <p>Returning to our API design goals, this design enforces consistency between related elements: an event listener's payload must match the event it's registered to.</p>
-<h2><a class="header" href="#2-type-safe-dependency-injection" id="2-type-safe-dependency-injection">2. Type-safe dependency injection</a></h2>
+<h2 id="2-type-safe-dependency-injection"><a class="header" href="#2-type-safe-dependency-injection">2. Type-safe dependency injection</a></h2>
 <p>We'll walk through another example of using type registries to avoid unsafe string-based design. The basic idea of dependency injection (DI) is that you have a component that depends on another, like a web server using a database. However, you don't want to hard-code a particular database constructor, and rather make it easy to swap in different databases. For example:</p>
 <pre><code class="language-rust ignore">trait Database {
   fn name(&amp;self) -&gt; &amp;'static str;
@@ -363,7 +365,7 @@ manager.build::&lt;MySQL&gt;().unwrap();
 let server = manager.build::&lt;WebServer&gt;().unwrap();
 server.lock().unwrap().run(); // prints Db name: MySQL
 </code></pre>
-<h3><a class="header" href="#di-constructors" id="di-constructors">DI constructors</a></h3>
+<h3 id="di-constructors"><a class="header" href="#di-constructors">DI constructors</a></h3>
 <p>First, we'll define a trait <code>DIBuilder</code> that represents a constructor within our DI system.</p>
 <pre><code class="language-rust ignore">trait DIBuilder {
   type Input;
@@ -399,7 +401,7 @@ impl DIBuilder for WebServer {
   }
 }
 </code></pre>
-<h3><a class="header" href="#di-manager" id="di-manager">DI manager</a></h3>
+<h3 id="di-manager"><a class="header" href="#di-manager">DI manager</a></h3>
 <p>Now that we know the dependency structure of our objects, we need a centralized manager to store the objects and fetch their dependencies.</p>
 <pre><code class="language-rust ignore">struct DIManager(TypeMap);
 </code></pre>
@@ -427,7 +429,7 @@ impl DIManager {
   }
 }
 </code></pre>
-<h3><a class="header" href="#di-dependencies" id="di-dependencies">DI dependencies</a></h3>
+<h3 id="di-dependencies"><a class="header" href="#di-dependencies">DI dependencies</a></h3>
 <p>Finally, we need a way to implement the <code>let input</code> line in <code>DIManager::build</code>. Given a type <code>T: DIBuilder</code>, it has an associated type <code>T::Input</code> that represents the inputs needed to build it.</p>
 <p>To simplify the problem, imagine <code>T::Input = S</code> where <code>S: DIBuilder</code>. Then if <code>S</code> has already been built, e.g. <code>T = WebServer</code> and <code>S = Box&lt;dyn Database&gt;</code>, we can fetch it directly from the typemap:</p>
 <pre><code class="language-rust ignore">let input = self.0.get::&lt;T::Input&gt;().map(|obj| obj.clone())?;
@@ -501,7 +503,7 @@ impl&lt;S: GetInput, T: GetInput&gt; GetInput for (S, T) {
 }
 </code></pre>
 <p>Now, the expression <code>T::Input::get_input(self)</code> will convert a tuple of types into a tuple of values of those types.</p>
-<h3><a class="header" href="#final-api-example" id="final-api-example">Final API example</a></h3>
+<h3 id="final-api-example"><a class="header" href="#final-api-example">Final API example</a></h3>
 <p>With the API complete, our example now looks like this:</p>
 <pre><code class="language-rust ignore">let mut manager = DIManager::new();
 manager.build::&lt;MySQL&gt;().unwrap();
