@@ -1,6 +1,6 @@
 # The Main Idea
 
-An API is a computational **representation** of real-world concepts. Representations are mappings between elements of a represented world (e.g. real life) and a representing world (e.g. an API). For example, the abstract concept of a number can be expressed through many notations (or interfaces):
+An API is a computational **representation** of real-world concepts. Representations are mappings between elements of a represented world (e.g. a primary color) and a representing world (e.g. an enum in a programming language). A concept can have many representations &mdash; for instance, a number can be expressed many ways:
 
 <center>
     <img src="./images/representation_number_table.png" width="90%" /><br />
@@ -15,7 +15,7 @@ A skilled API designer can design representations _systematically_, understandin
     <img src="./images/representation_number_diagram.png" width="90%" /><br />
 </center>
 
-Using this taxonomy, we can understand that all 1D systems (like tally marks) make addition easier, because addition reduces to concatenating strings (e.g. II + I = III). However, 1x1D systems (like Arabic numerals) make multiplication easier &mdash; see [the paper](https://www.academia.edu/download/51476691/A_Representational_Analysis_of_Numeratio20170123-25558-8fmkpj.pdf) for why.
+Using this taxonomy, we can understand that all 1D systems (like tally marks) make addition easier, because addition reduces to concatenating strings (e.g. II + I = III). However, 1x1D systems (like Arabic numerals) make multiplication easier &mdash; see [the paper](https://www.sciencedirect.com/science/article/pii/0010027795006743) for why.
 
 
 > If you're interested in learning more about representation theory in cognitive psychology, I strongly recommend [Things That Make Us Smart](https://www.amazon.com/Things-That-Make-Smart-Attributes-ebook/dp/B00QFJHP94) by Don Norman.
