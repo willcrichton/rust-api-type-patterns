@@ -141,7 +141,7 @@ fn main() {
 }
 ```
 
-Thise API now enforces both access control and cleanup:
+This API now enforces both access control and cleanup:
 1. **Access control:** when a thread calls `MutexGuard::get`, the borrow on `T` can only last as long as the `MutexGuard`, preventing dangling pointers. And the mutex is guaranteed to be locked by construction when `MutexGuard` exists.
 2. **Cleanup:** only after all borrows to `T` have ended will `MutexGuard` be dropped, which then automatically unlocks the system mutex. The API client cannot possibly forget or unlock in the wrong order.
 
